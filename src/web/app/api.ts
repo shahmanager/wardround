@@ -111,6 +111,37 @@ export interface DashboardResponse {
   outcomes: { deaths: number; cured: number }
 }
 
+export interface ReportsSeriesPoint {
+  day: string
+  measured: number
+  visits: number
+  admitted: number
+  discharged: number
+  died: number
+  closed: number
+}
+
+export interface ReportsResponse {
+  currentDay: string
+  days: number
+  closedCases: number
+  outcomes: { deaths: number; cured: number }
+  mortalityRate: number | null
+  successRate: number | null
+  avgLengthOfStay: number | null
+  avgDischargeDelay: number | null
+  mortalityLast7: { deaths: number; closed: number; rate: number | null }
+  today: {
+    bedCount: number
+    measuredCount: number
+    visitCount: number
+    visitsBeforeTemp: number
+    awaitingDischarge: number
+    bedsLikelyFree: number
+  }
+  series: ReportsSeriesPoint[]
+}
+
 export interface AuditFilters {
   patient?: string
   actor?: string
@@ -153,6 +184,7 @@ export const queryKeys = {
   ward: ['ward'] as const,
   patient: (id: string) => ['patient', id] as const,
   dashboard: ['dashboard'] as const,
+  reports: (days: number) => ['reports', days] as const,
   beds: ['beds'] as const,
   audit: (filters?: AuditFilters) => ['audit', filters ?? {}] as const,
 }
@@ -198,6 +230,7 @@ export const api = {
 
   // Head doctor / admin views
   getDashboard: () => request<DashboardResponse>('/dashboard'),
+  getReports: (days: number) => request<ReportsResponse>(`/reports?days=${days}`),
   getAudit: (filters?: AuditFilters) => {
     const params = new URLSearchParams()
     if (filters?.patient) params.set('patient', filters.patient)

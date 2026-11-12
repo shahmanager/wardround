@@ -2,10 +2,9 @@
 // is one tap onto a bed-tag-style id chip. Signing in creates the visitor
 // workspace, then the route follows the role.
 import { useNavigate } from 'react-router'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Role, Staff } from '@/domain'
-import { api, ApiClientError } from '@/web/app/api'
-import { queryKeys } from '@/web/app/api'
+import { api, ApiClientError, queryKeys, type MeResponse } from '@/web/app/api'
 import { SkeletonRows } from '@/web/components/ui'
 
 // ---- Role groups --------------------------------------------------------------------
@@ -94,6 +93,7 @@ function IdTag({ label }: { label: string }) {
 
 export function SignIn() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const staffQuery = useQuery({
     queryKey: queryKeys.staff,
     queryFn: () => api.getStaff(),
@@ -103,6 +103,16 @@ export function SignIn() {
   const signIn = useMutation({
     mutationFn: (staffId: string) => api.createSession(staffId),
     onSuccess: (data) => {
+      // Sign-out pins ['me'] to null so the router can leave the signed-in
+      // shell at once. Seed it with the new session here — otherwise the
+      // fresh null cache (staleTime 60s) sends the new role straight back to
+      // the sign-in screen until a full reload.
+      const me: MeResponse = {
+        staff: data.staff,
+        workspaceId: data.workspaceId,
+        currentDay: data.currentDay,
+      }
+      queryClient.setQueryData(queryKeys.me, me)
       navigate(roleDestinations[data.staff.role])
     },
   })

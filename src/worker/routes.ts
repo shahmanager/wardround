@@ -62,6 +62,7 @@ import {
   resetStatements,
 } from './db'
 import { apiError, mutationGuard, requirePermission, requireSession, securityHeaders } from './middleware'
+import { reports } from './reports'
 
 type Db = AppEnv['Bindings']['DB']
 
@@ -676,6 +677,8 @@ routes.get('/dashboard', requireSession, requirePermission('dashboard.view'), as
     outcomes: { deaths: mortality.deaths, cured: mortality.cured },
   })
 })
+
+routes.route('/reports', reports)
 
 routes.get('/audit', requireSession, requirePermission('audit.view'), async (c) => {
   const p = c.get('principal')

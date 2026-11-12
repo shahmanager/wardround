@@ -3,10 +3,10 @@
 // on every request; this UI uses the same domain `can()` so no role ever sees
 // an action it cannot take, and guarded pages explain who they belong to.
 import { useCallback, useState, type ReactNode } from 'react'
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { can, ROLE_LABELS, type Permission, type Staff } from '@/domain'
-import { api, queryKeys } from './api'
+import { api } from './api'
 import { useSession } from './session'
 import { Button, ErrorBoundary, Modal, useToasts } from '@/web/components/ui'
 import { SignIn } from '@/web/screens/sign-in'
@@ -18,6 +18,7 @@ import { AboutPage } from '@/web/screens/about'
 // Landed by agent D in flight; audit is the DeepSeek handoff task.
 import { PatientDetail } from '@/web/screens/patient-detail'
 import { DashboardScreen } from '@/web/screens/dashboard'
+import { ReportsScreen } from '@/web/screens/reports'
 import { AuditScreen } from '@/web/screens/audit'
 
 function roleLabel(staff: Staff): string {
@@ -28,7 +29,6 @@ function roleLabel(staff: Staff): string {
 // ---- Chrome (strip + top bar + demo controls) -----------------------------------
 
 function TopBar({ me }: { me: NonNullable<ReturnType<typeof useSession>['me']> }) {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmAdvance, setConfirmAdvance] = useState(false)
@@ -68,27 +68,23 @@ function TopBar({ me }: { me: NonNullable<ReturnType<typeof useSession>['me']> }
 
   const signOut = useCallback(async () => {
     setBusy('signout')
-    let reachedServer = true
     try {
       await api.signOut()
     } catch {
-      // Do not claim a clean sign-out when the request never landed: the
-      // stateless cookie stays valid, so a reload could sign the visitor back
-      // in. Carry on to the sign-in screen, but say what happened.
-      reachedServer = false
-    } finally {
-      // Drop every cached query, then pin the session to "signed out" so the
-      // router renders the sign-in screen immediately instead of bouncing
-      // through two loading redirects while /me resolves.
-      queryClient.clear()
-      queryClient.setQueryData(queryKeys.me, null)
-      navigate('/signin', { replace: true })
+      // If the request never landed the session cookie is still valid, so a
+      // reload would sign the visitor back in. Say so and stay put; a second
+      // tap retries the delete.
       setBusy(null)
-      if (!reachedServer) {
-        push({ tone: 'warn', message: 'Signed out here, but the server did not confirm. If you reload and are still signed in, sign out again.' })
-      }
+      push({ tone: 'error', message: 'Could not reach the server to sign out. Check the connection and try again.' })
+      return
     }
-  }, [queryClient, navigate, push])
+    // A hard navigation is deliberate: it drops the in-memory query cache
+    // (which still holds the previous role's workspace) instead of trying to
+    // unwind it while the shell is mounted. The sign-in screen then starts
+    // from a clean /me = 401, and choosing another person works without a
+    // manual refresh.
+    window.location.replace('/signin')
+  }, [push])
 
   return (
     <header className="border-b border-ink/15 bg-white">
@@ -115,6 +111,11 @@ function TopBar({ me }: { me: NonNullable<ReturnType<typeof useSession>['me']> }
           {can(me.staff, 'dashboard.view') && (
             <Link to="/dashboard" className="rounded px-3 py-2 text-sm font-semibold hover:bg-gauze">
               Dashboard
+            </Link>
+          )}
+          {can(me.staff, 'dashboard.view') && (
+            <Link to="/reports" className="rounded px-3 py-2 text-sm font-semibold hover:bg-gauze">
+              Reports
             </Link>
           )}
           {can(me.staff, 'audit.view') && (
@@ -279,9 +280,23 @@ export function App() {
       <div className="caution-strip h-2" aria-hidden="true" />
       {me !== null && <TopBar me={me} />}
       <ErrorBoundary>
-        <Routes>
+        <main>
+          <Routes>
           <Route path="/" element={<HomeRedirect />} />
-          <Route path="/signin" element={me === null && !isLoading ? <SignIn /> : <Navigate to="/" replace />} />
+          <Route
+            path="/signin"
+            element={
+              isLoading ? (
+                <div className="mx-auto max-w-2xl px-6 py-24 text-muted" role="status">
+                  Loading your session…
+                </div>
+              ) : me === null ? (
+                <SignIn />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
           <Route
             path="/rounds"
             element={
@@ -323,6 +338,14 @@ export function App() {
             }
           />
           <Route
+            path="/reports"
+            element={
+              <Guard permission="dashboard.view" who="Head Doctor">
+                <ReportsScreen />
+              </Guard>
+            }
+          />
+          <Route
             path="/audit"
             element={
               <Guard permission="audit.view" who="Head Doctor and Admin">
@@ -339,7 +362,8 @@ export function App() {
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </main>
       </ErrorBoundary>
       {toasts}
     </div>

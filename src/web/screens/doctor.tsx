@@ -19,10 +19,11 @@ import {
   Modal,
   SectionHeading,
   SkeletonRows,
+  StatTile,
   TextArea,
   useToasts,
 } from '@/web/components/ui'
-import { CONFIG, evaluateTempInput, formatDay, formatTemp, readingQualifies } from '@/domain'
+import { CONFIG, dayDiff, evaluateTempInput, formatDay, formatTemp, readingQualifies } from '@/domain'
 import type { PatientDayState } from '@/domain'
 
 type WardPatient = Awaited<ReturnType<typeof api.getWard>>['patients'][number]
@@ -84,6 +85,20 @@ function compareBed(a: WardPatient, b: WardPatient): number {
 
 function qualifiesToday(d: PatientDayState): boolean {
   return d.todayReading !== null && readingQualifies(d.todayReading)
+}
+
+/** Change since yesterday, the register doctors read before a visit. */
+function temperatureTrend(d: PatientDayState): { delta: number; arrow: '↑' | '↓' | '→'; text: string } | null {
+  if (d.todayReading === null || d.yesterdayReading === null) return null
+  const delta = Math.round((d.todayReading.tempC - d.yesterdayReading.tempC) * 10) / 10
+  const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→'
+  const magnitude = Math.abs(delta).toFixed(1)
+  return { delta, arrow, text: delta === 0 ? 'No change' : `${arrow} ${delta > 0 ? '+' : '−'}${magnitude} °C` }
+}
+
+/** Length of stay in whole days, 1-based, from the admission day. */
+function stayLength(admittedDay: string | null, today: string): number | null {
+  return admittedDay === null ? null : dayDiff(admittedDay, today) + 1
 }
 
 // ---- shared modals -------------------------------------------------------------
@@ -335,20 +350,35 @@ function buildGroups(patients: WardPatient[]): Group[] {
 
 interface QueueRowProps {
   patient: WardPatient
+  today: string
   group: Group['id']
   selected: boolean
   onSelect: () => void
   onOpenModal: (target: ModalTarget) => void
 }
 
-function QueueRow({ patient, group, selected, onSelect, onOpenModal }: QueueRowProps) {
+function QueueRow({ patient, today, group, selected, onSelect, onOpenModal }: QueueRowProps) {
   const d = patient.day
   const temp = d.todayReading
+  const trend = temperatureTrend(d)
   const tempLine = temp
     ? `${formatTemp(temp.tempC)} °C${
         temp.masked ? ', after medicine' : d.flags.needsAttention ? ', needs attention' : temp.tempC >= CONFIG.FEVER_THRESHOLD_C ? ', fever' : ''
       }`
     : 'No temperature yet'
+
+  // Recognition over recall: the queue carries the facts the doctor would
+  // otherwise open the record to check.
+  const facts: string[] = []
+  const stay = stayLength(patient.admittedDay, today)
+  if (stay !== null) facts.push(`Day ${stay} of stay`)
+  if (d.yesterdayReading !== null) facts.push(`Yesterday ${formatTemp(d.yesterdayReading.tempC)} °C`)
+  if (d.visitToday !== null) {
+    facts.push(d.visitToday.viaDischargeApproval ? 'Approved as visit' : `Visited ${hhmm(d.visitToday.loggedAt)}`)
+  }
+  if (d.flags.missedYesterday) facts.push('No reading yesterday')
+  if (d.flags.masked) facts.push('After medicine')
+  if (d.flags.lateEntry) facts.push('Late entry')
 
   let action: ReactNode = null
   if (group === 'waiting') {
@@ -357,8 +387,8 @@ function QueueRow({ patient, group, selected, onSelect, onOpenModal }: QueueRowP
         <Button size="md" disabled aria-label="Log visit, unavailable: temperature not recorded yet">
           Log visit
         </Button>
-        <Button size="md" variant="secondary" onClick={() => onOpenModal({ kind: 'record', patient: asModalPatient(patient) })}>
-          Record temperature yourself
+        <Button size="md" variant="ghost" onClick={() => onOpenModal({ kind: 'record', patient: asModalPatient(patient) })}>
+          Record temperature
         </Button>
       </div>
     )
@@ -395,34 +425,53 @@ function QueueRow({ patient, group, selected, onSelect, onOpenModal }: QueueRowP
 
   const blockedReason =
     group === 'waiting'
-      ? 'Temperature not recorded yet'
+      ? 'Log visit unlocks once a temperature is recorded today.'
       : group === 'ready' && patient.status !== 'DISCHARGE_APPROVED' && !qualifiesToday(d)
-        ? 'Needs a qualifying temperature for today before approval'
+        ? 'Needs a qualifying temperature for today before approval.'
         : null
 
   return (
-    <li className="border-b border-ink/10">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-1.5">
+    <li className={`border-b border-ink/10 ${selected ? 'bg-ink/[0.045]' : ''}`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
         <button
           type="button"
           onClick={onSelect}
           aria-current={selected ? 'true' : undefined}
-          className="flex min-h-11 min-w-0 flex-1 basis-64 items-center gap-3 rounded-md text-left transition-colors duration-150 hover:bg-ink/5"
+          className="flex min-h-12 min-w-0 flex-1 basis-64 items-start gap-3 rounded-md px-1 py-0.5 text-left transition-colors duration-150 hover:bg-ink/5"
         >
-          <BedTag bed={patient.bed ?? ''} size="sm" />
+          <span className="pt-0.5">
+            <BedTag bed={patient.bed ?? ''} size="sm" />
+          </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold text-ink">{patient.name}</span>
-            <span className={`block break-words text-sm ${temp && temp.tempC >= CONFIG.FEVER_THRESHOLD_C ? 'font-medium text-mercury' : 'text-muted'}`}>
+            <span className="flex flex-wrap items-baseline gap-x-2">
+              <span className="break-words font-semibold text-ink">{patient.name}</span>
+              <span className="text-sm text-muted">Age {patient.age}</span>
+            </span>
+            <span
+              className={`block break-words text-sm ${
+                temp !== null && temp.tempC >= CONFIG.FEVER_THRESHOLD_C ? 'font-medium text-mercury' : 'text-muted'
+              }`}
+            >
               {tempLine}
             </span>
+            {facts.length > 0 && <span className="mt-0.5 block text-sm text-muted">{facts.join(', ')}</span>}
+            {trend !== null && (
+              <span
+                className={`mt-0.5 block text-sm tabular-nums ${
+                  trend.delta > 0 ? 'text-mercury' : trend.delta < 0 ? 'text-done' : 'text-muted'
+                }`}
+              >
+                {trend.text} since yesterday
+              </span>
+            )}
           </span>
-          <span className="shrink-0">
+          <span className="shrink-0 pt-0.5">
             <StreakLadder streak={d.streak} />
           </span>
         </button>
         <span className="shrink-0">{action}</span>
       </div>
-      {blockedReason !== null && <p className="pb-2 text-sm text-muted">{blockedReason}</p>}
+      {blockedReason !== null && <p className="-mt-1 pb-2 pl-1 text-sm text-muted">{blockedReason}</p>}
     </li>
   )
 }
@@ -460,6 +509,8 @@ function ChartPane({ patientId, today, onOpenModal }: ChartPaneProps) {
 
   const { patient, day, readings } = detail.data
   const temp = day.todayReading
+  const stay = stayLength(patient.admittedDay, today)
+  const trend = temperatureTrend(day)
 
   return (
     <article className="min-w-0">
@@ -469,6 +520,40 @@ function ChartPane({ patientId, today, onOpenModal }: ChartPaneProps) {
         <span className="text-muted">Age {patient.age}</span>
         <Chip tone={patient.status === 'DISCHARGE_APPROVED' ? 'done' : 'neutral'}>{STATUS_LABEL[patient.status]}</Chip>
       </header>
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 border-y border-ink/10 py-3 text-sm sm:grid-cols-5">
+        <div>
+          <dt className="text-muted">Admitted</dt>
+          <dd className="mt-0.5 font-medium text-ink">
+            {patient.admittedDay === null ? 'Not recorded' : formatDay(patient.admittedDay)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted">Day of stay</dt>
+          <dd className="mt-0.5 font-medium tabular-nums text-ink">{stay === null ? '—' : stay}</dd>
+        </div>
+        <div>
+          <dt className="text-muted">Yesterday</dt>
+          <dd className="mt-0.5 font-medium tabular-nums text-ink">
+            {day.yesterdayReading === null ? 'No reading' : `${formatTemp(day.yesterdayReading.tempC)} °C`}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted">Trend</dt>
+          <dd
+            className={`mt-0.5 font-medium tabular-nums ${
+              trend === null || trend.delta <= 0 ? 'text-ink' : 'text-mercury'
+            }`}
+          >
+            {trend === null ? '—' : trend.text}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted">Visit today</dt>
+          <dd className="mt-0.5 font-medium text-ink">
+            {day.visitToday === null ? 'Not yet' : hhmm(day.visitToday.loggedAt)}
+          </dd>
+        </div>
+      </dl>
       <div className="mt-2 flex flex-wrap gap-2">
         {day.flags.masked && <Chip tone="amber">Temperature after fever-reducing medicine</Chip>}
         {day.flags.missedYesterday && <Chip tone="amber">No reading yesterday</Chip>}
@@ -562,17 +647,21 @@ export function DoctorVisits() {
   const ward = useQuery({ queryKey: queryKeys.ward, queryFn: () => api.getWard() })
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalTarget | null>(null)
+  // Open on the actionable queue, like the ward round starts: patients whose
+  // temperature is in and who still need a doctor.
+  const [tab, setTab] = useState<'all' | Group['id']>('to-visit')
+  const [search, setSearch] = useState('')
 
   if (ward.isPending) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <SkeletonRows rows={8} />
       </div>
     )
   }
   if (ward.isError) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div role="alert" className="border border-mercury/40 bg-white p-4">
           <p className="font-semibold text-mercury">Could not load the ward board.</p>
           <p className="mt-1 text-sm text-muted">{errorInfo(ward.error)} Check the connection and try again.</p>
@@ -587,39 +676,177 @@ export function DoctorVisits() {
   const data = ward.data
   const patients = [...data.patients].sort(compareBed)
   const groups = buildGroups(patients)
-  const selected = patients.find((p) => p.id === selectedId) ?? null
+  // "Visited today" is a fact about the day, not a queue partition: a patient
+  // can be visited and discharge-eligible at the same time, so this tab
+  // deliberately overlaps the queue groups and matches the header tile.
+  const visitedAll = patients.filter((p) => p.day.visitToday !== null)
+  const unseen = Math.max(0, data.compliance.bedCount - data.compliance.visitCount)
+  const unmeasured = Math.max(0, data.compliance.bedCount - data.compliance.measuredCount)
+  const groupCount = (id: Group['id']) => groups.find((g) => g.id === id)?.patients.length ?? 0
+  const tabItems: Array<{ id: 'all' | Group['id']; label: string; count: number }> = [
+    { id: 'all', label: 'All zones', count: patients.length },
+    { id: 'attention', label: 'Needs attention', count: groupCount('attention') },
+    { id: 'ready', label: 'Discharge eligible', count: groupCount('ready') },
+    { id: 'to-visit', label: 'Ready for visit', count: groupCount('to-visit') },
+    { id: 'waiting', label: 'Waiting for temperature', count: groupCount('waiting') },
+    { id: 'visited', label: 'Visited today', count: visitedAll.length },
+  ]
+
+  // Search filters the queue by the labels a doctor can see: name, bed, id.
+  const needle = search.trim().toLowerCase()
+  const searched =
+    needle === ''
+      ? patients
+      : patients.filter((p) =>
+          [p.name, p.bed ?? '', p.id].some((value) => value.toLowerCase().includes(needle)),
+        )
+  const searchedGroups = buildGroups(searched)
+  const tabGroups: Group[] =
+    tab === 'visited'
+      ? [
+          {
+            id: 'visited',
+            title: 'Visited today',
+            patients: searched.filter((p) => p.day.visitToday !== null),
+          },
+        ]
+      : searchedGroups.filter((g) => g.id === tab)
+  const visibleGroups =
+    tab === 'all' ? searchedGroups : tabGroups.filter((g) => g.patients.length > 0)
+  const defaultId = visibleGroups[0]?.patients[0]?.id ?? null
   const closeModal = () => setModal(null)
 
+  // Derived selection (no effect, and so no hook-order surprises on the
+  // early returns above): keep the tapped patient while they are visible,
+  // otherwise open the top of the current queue — needs attention first.
+  const activeId =
+    selectedId !== null &&
+    visibleGroups.some((group) => group.patients.some((patient) => patient.id === selectedId))
+      ? selectedId
+      : defaultId
+  const active = patients.find((patient) => patient.id === activeId) ?? null
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <header>
-        <h1 className="font-signage text-3xl font-bold tracking-tight">Today's visits</h1>
-        <p className="mt-1 text-muted">
-          {formatDay(data.currentDay)}, {data.occupied} of {data.capacity} beds occupied. {data.compliance.measuredCount}{' '}
-          of {data.compliance.bedCount} measured, {data.compliance.visitCount} visited today.
-        </p>
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <header className="border-b border-ink/15 pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="font-signage text-sm font-semibold uppercase tracking-wide text-muted">
+              Doctor round
+            </p>
+            <h1 className="mt-1 font-signage text-3xl font-bold tracking-tight">Today's visits</h1>
+            <p className="mt-1 max-w-prose text-muted">
+              A patient appears under Ready for visit the moment a nurse records today's temperature.
+            </p>
+          </div>
+          <p className="text-muted">{formatDay(data.currentDay)}</p>
+        </div>
+
+        {unseen > 0 && (
+          <div
+            role="status"
+            className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 border border-signal/40 bg-signal-tint px-4 py-3"
+          >
+            <span className="font-semibold text-signal">Still to see</span>
+            <span className="text-ink">
+              {unseen === 1 ? '1 patient has' : `${unseen} patients have`} not been seen today.
+              {unmeasured > 0 && ` ${unmeasured} still need a temperature first.`}
+            </span>
+          </div>
+        )}
+
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile label="Ready for visit" value={groupCount('to-visit')} sub="temperature in, not yet seen" />
+          <StatTile label="Waiting on nurse" value={groupCount('waiting')} sub="visit locked until measured" />
+          <StatTile
+            label="Visited today"
+            value={data.compliance.visitCount}
+            sub="visits logged today"
+          />
+          <StatTile
+            label="Discharge eligible"
+            value={groupCount('ready')}
+            sub={`${data.capacity - data.occupied} beds free`}
+          />
+        </dl>
+
+        <div className="mt-4">
+          <label htmlFor="visit-search" className="sr-only">
+            Search the visit queue
+          </label>
+          <input
+            id="visit-search"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by name, bed or ID"
+            className="min-h-11 w-full rounded-sm border border-ink/20 bg-white px-3 text-ink placeholder:text-muted focus:border-focus"
+          />
+        </div>
+
+        <nav aria-label="Queue filters" className="mt-4 flex gap-1 overflow-x-auto border-b border-ink/15">
+          {tabItems.map((item) => {
+            const active = tab === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                aria-pressed={active}
+                className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
+                  active ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                }`}
+              >
+                {item.label} <span className="ml-1 tabular-nums">{item.count}</span>
+              </button>
+            )
+          })}
+        </nav>
       </header>
 
-      <div className="mt-4 grid items-start gap-6 xl:grid-cols-[minmax(360px,460px)_minmax(0,1fr)]">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(400px,520px)_minmax(0,1fr)] xl:grid-cols-[minmax(460px,600px)_minmax(0,1fr)] xl:gap-8">
         <section aria-label="Visit queue">
-          {groups.length === 0 ? (
+          {visibleGroups.length === 0 ? (
             <EmptyState
-              title="Everyone is seen"
-              body="Every patient in a bed has been visited today. New patients appear as nurses record temperatures."
+              title={
+                needle !== ''
+                  ? 'No patient matches that search'
+                  : tab !== 'all'
+                    ? 'Nobody in this list right now'
+                    : 'Everyone is seen'
+              }
+              body={
+                needle !== ''
+                  ? 'Try a name, a bed such as A-12, or part of a patient id.'
+                  : tab !== 'all'
+                    ? 'Switch to All zones to see the rest of the ward.'
+                    : 'Every patient in a bed has been visited today. New patients appear as nurses record temperatures.'
+              }
             />
           ) : (
-            groups.map((group) => (
+            visibleGroups.map((group) => (
               <div key={group.id} className="mb-6">
                 <SectionHeading>
                   {group.title} ({group.patients.length})
                 </SectionHeading>
+                {group.id === 'attention' && (
+                  <p className="mb-2 text-sm text-mercury">
+                    Fever today, or a temperature taken after medicine. Review before the visit.
+                  </p>
+                )}
+                {group.id === 'waiting' && (
+                  <p className="mb-2 text-sm text-muted">
+                    A temperature is needed before the visit. You can record it yourself.
+                  </p>
+                )}
                 <ul>
                   {group.patients.map((p) => (
                     <QueueRow
                       key={p.id}
                       patient={p}
+                      today={data.currentDay}
                       group={group.id}
-                      selected={p.id === selectedId}
+                      selected={p.id === activeId}
                       onSelect={() => setSelectedId(p.id)}
                       onOpenModal={setModal}
                     />
@@ -630,14 +857,17 @@ export function DoctorVisits() {
           )}
         </section>
 
-        <section aria-label="Selected patient" className="min-w-0">
-          {selected === null ? (
+        <section
+          aria-label="Selected patient"
+          className="min-w-0 lg:sticky lg:top-6 lg:border-l lg:border-ink/10 lg:pl-6 xl:pl-8"
+        >
+          {active === null ? (
             <EmptyState
               title="Select a patient"
               body="Choose someone from the queue to see their observation chart, streak and actions."
             />
           ) : (
-            <ChartPane patientId={selected.id} today={data.currentDay} onOpenModal={setModal} />
+            <ChartPane patientId={active.id} today={data.currentDay} onOpenModal={setModal} />
           )}
         </section>
       </div>
