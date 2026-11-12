@@ -5,7 +5,7 @@ const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export function isIsoDay(s: string): boolean {
   if (!DAY_RE.test(s)) return false
-  const [y, m, d] = s.split('-').map(Number) as [number, number, number]
+  const [, m, d] = s.split('-').map(Number) as [number, number, number]
   return m >= 1 && m <= 12 && d >= 1 && d <= 31
 }
 

@@ -106,6 +106,7 @@ export interface ButtonProps {
   loading?: boolean
   type?: 'button' | 'submit'
   onClick?: MouseEventHandler<HTMLButtonElement>
+  className?: string
   children: ReactNode
 }
 
@@ -116,6 +117,7 @@ export function Button({
   loading = false,
   type = 'button',
   onClick,
+  className,
   children,
 }: ButtonProps) {
   const inactive = disabled || loading
@@ -125,7 +127,7 @@ export function Button({
       disabled={inactive}
       aria-busy={loading || undefined}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md font-body font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${buttonSizeClasses[size]} ${buttonVariantClasses[variant]}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md font-body font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${buttonSizeClasses[size]} ${buttonVariantClasses[variant]}${className ? ` ${className}` : ''}`}
     >
       {loading && <SpinnerIcon />}
       {children}

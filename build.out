@@ -1,0 +1,39 @@
+﻿
+> wardround@1.0.0 build
+> vite build
+
+vite v6.4.6 building for production...
+transforming...
+✓ 118 modules transformed.
+rendering chunks...
+computing gzip size...
+../../dist/index.html                                                           0.56 kB │ gzip:   0.35 kB
+../../dist/assets/barlow-semi-condensed-vietnamese-500-normal-hJ2t9k9e.woff     6.27 kB
+../../dist/assets/barlow-semi-condensed-vietnamese-700-normal-BvUTSFNY.woff     6.37 kB
+../../dist/assets/barlow-semi-condensed-vietnamese-600-normal-DzVrjA0Q.woff     6.40 kB
+../../dist/assets/atkinson-hyperlegible-latin-ext-400-normal-Bbz-b3yf.woff      7.36 kB
+../../dist/assets/atkinson-hyperlegible-latin-ext-700-normal-CKkU2Dpt.woff      7.36 kB
+../../dist/assets/barlow-semi-condensed-vietnamese-500-normal-DGADhYWF.woff2    7.81 kB
+../../dist/assets/barlow-semi-condensed-vietnamese-600-normal-b1FQiZcx.woff2    8.01 kB
+../../dist/assets/barlow-semi-condensed-vietnamese-700-normal-Dm7RZTvf.woff2    8.02 kB
+../../dist/assets/atkinson-hyperlegible-latin-ext-700-normal-BoVPHkS0.woff2     9.37 kB
+../../dist/assets/atkinson-hyperlegible-latin-ext-400-normal-DRk46D-x.woff2     9.38 kB
+../../dist/assets/barlow-semi-condensed-latin-ext-500-normal-rZeYuEMb.woff     12.37 kB
+../../dist/assets/barlow-semi-condensed-latin-ext-600-normal-BuP8AaxH.woff     12.51 kB
+../../dist/assets/barlow-semi-condensed-latin-ext-700-normal-C0vCoZIV.woff     12.52 kB
+../../dist/assets/atkinson-hyperlegible-latin-400-normal-BbWidj28.woff         14.02 kB
+../../dist/assets/atkinson-hyperlegible-latin-700-normal-BK6Glc0m.woff         14.29 kB
+../../dist/assets/barlow-semi-condensed-latin-ext-500-normal-BXdp1BvY.woff2    14.52 kB
+../../dist/assets/barlow-semi-condensed-latin-ext-600-normal-BkQ9hN72.woff2    14.85 kB
+../../dist/assets/barlow-semi-condensed-latin-ext-700-normal-BhgEo64M.woff2    15.08 kB
+../../dist/assets/atkinson-hyperlegible-latin-400-normal-BrHNak5F.woff2        17.21 kB
+../../dist/assets/atkinson-hyperlegible-latin-700-normal-GZI4o3u0.woff2        17.52 kB
+../../dist/assets/barlow-semi-condensed-latin-500-normal-CFOoVYFH.woff         19.72 kB
+../../dist/assets/barlow-semi-condensed-latin-700-normal-BMyZXq_9.woff         19.94 kB
+../../dist/assets/barlow-semi-condensed-latin-600-normal-DyOfdMBA.woff         20.03 kB
+../../dist/assets/barlow-semi-condensed-latin-500-normal-G0uxJNrM.woff2        22.43 kB
+../../dist/assets/barlow-semi-condensed-latin-600-normal-BkLiAYu4.woff2        22.98 kB
+../../dist/assets/barlow-semi-condensed-latin-700-normal-BpqDG8I9.woff2        23.24 kB
+../../dist/assets/index-moFnT_-M.css                                           36.06 kB │ gzip:   7.31 kB
+../../dist/assets/index-DQQj2cwS.js                                           480.27 kB │ gzip: 146.12 kB
+✓ built in 56.66s

@@ -7,7 +7,11 @@ export default defineConfig({
   root: path.resolve(import.meta.dirname, 'src/web'),
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: { '@': path.resolve(import.meta.dirname, 'src') },
+    alias: [
+      { find: /^@\/app\//, replacement: path.resolve(import.meta.dirname, 'src/web/app') + path.sep },
+      { find: /^@\/components\//, replacement: path.resolve(import.meta.dirname, 'src/web/components') + path.sep },
+      { find: '@', replacement: path.resolve(import.meta.dirname, 'src') },
+    ],
   },
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist'),

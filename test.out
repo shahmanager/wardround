@@ -1,0 +1,14 @@
+﻿
+ RUN  v3.2.7 C:/Users/Devam Shah/Downloads/factwise test/WardRound
+
+ ✓ src/domain/__tests__/metrics.test.ts (26 tests) 30ms
+ ✓ src/domain/__tests__/flow.test.ts (65 tests) 51ms
+ ✓ src/domain/__tests__/streak.property.test.ts (18 tests) 452ms
+   ✓ streak properties (fast-check) > removing a reading (creating a gap) never increases the streak  333ms
+ ✓ src/domain/__tests__/temp-and-streak.test.ts (43 tests) 50ms
+
+ Test Files  4 passed (4)
+      Tests  152 passed (152)
+   Start at  18:10:13
+   Duration  5.18s (transform 1.77s, setup 0ms, collect 3.21s, tests 582ms, environment 2ms, prepare 2.56s)
+

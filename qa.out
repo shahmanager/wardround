@@ -1,0 +1,20 @@
+﻿signin nurse-asha 200 Nurse Asha Nair 2026-11-12
+ward 200 patients 74 occ 74
+needMeasure 
+nurse dashboard 403 {"error":{"code":"FORBIDDEN","message":"Your role does not have permission for this action."}}
+nurse audit 403 {"error":{"code":"FORBIDDEN","message":"Your role does not have permission for this action."}}
+signin doctor-rao 200 Dr. Vikram Rao 2026-11-12
+eligible now  alreadyApproved p-008,p-009
+approve 200 {"patient":{"id":"p-006","name":"Deepa Bose","age":23,"sex":"F","bed":"A-6","status":"DISCHARGE_APPROVED","admittedDay":"2026-10-31","firstEligibleDay":"2026-11-09","statusChangedDay":"2026-11-12","outcome":null,"closedD
+signin admin-priya 200 Priya Menon 2026-11-12
+beds 200 free 0 occ 74
+approved patients p-008:A-8,p-009:A-9
+complete 200 {"patient":{"id":"p-008","name":"Pooja Khan","age":49,"sex":"F","bed":null,"status":"DISCHARGED","admittedDay":"2026-11-03","firstEligibleDay":"2026-11-09","statusChangedDay":"2026-11-12","outcome":"cured","closedDay":"2
+free after 1
+admit 200 {"patient":{"id":"8eeceaaf-fc9b-42eb-88ca-45a61580811f","name":"Test Patient","age":30,"sex":"M","bed":"A-8","status":"ADMITTED","admittedDay":"2026-11-12","firstEligibleDay":null,"statusChangedDay":"2026-11-12","outcome
+signin doctor-neha 200 Dr. Neha Kulkarni 2026-11-12
+dashboard 200 {"deaths":7,"cured":33,"closed":40,"rate":0.175,"band":"red","message":"Mortality is 17.5%, above the 15% benchmark (7 of 40 closed cases)"} closed 40
+audit 200 entries 167 first {"id":"a-0075","day":"2026-11-12","at":"2026-11-12T09:40:00Z","actorId":"doctor-rao","actorRole":"DOCTOR","action":"discharge.approved","patientId":"p-008","detail":"Approved after sign-off"}
+audit filtered 200 0
+reset 200 {"currentDay":"2026-11-12"}
+after reset patients 74 occ 74

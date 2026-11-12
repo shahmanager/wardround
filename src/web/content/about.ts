@@ -5,6 +5,8 @@
 // Copy rules: plain, specific, sentence case, active voice. No invented
 // statistics; every target is labelled as proposed.
 
+import type { Role } from '../../domain/permissions'
+
 // --- navigation --------------------------------------------------------------
 
 export interface AboutNav {
@@ -30,9 +32,9 @@ export const ABOUT_NAV: AboutNav[] = [
 export const BRIEF = {
   intro:
     'WardRound is a shared ward board for a virus quarantine and treatment centre. It tells nurses who still needs a temperature today, tells doctors who is ready to see, and tells admin who can go home.',
-  problemTitle: 'The problem, in the head doctor\u2019s terms',
+  problemTitle: 'The problem, in the head doctor\'s terms',
   problem: [
-    'The centre has 74 beds, always full, with patients waiting. The main symptom is prolonged fever, and a patient is cured after 3 full days without fever \u2014 discharge depends only on that. The required daily process per patient is one thing: a nurse measures the temperature, then a doctor visits, the same day.',
+    'The centre has 74 beds, always full, with patients waiting. The main symptom is prolonged fever, and a patient is cured after 3 full days without fever. Discharge depends only on that. Each patient needs one daily sequence: a nurse measures the temperature, then a doctor visits, the same day.',
     'That sequence breaks every day, and nobody can see where. With an expected mortality of 15%, the head doctor also needs to see the outcome data against that benchmark, not reconstruct it from paper.',
   ],
   fiveProblems: [
@@ -40,7 +42,7 @@ export const BRIEF = {
     'Nobody knows who the doctor has already visited.',
     'Doctors arrive before the temperature exists and waste time.',
     'Doctors forget to tell admin about discharges; patients stay 1 to 2 extra days and beds stay blocked.',
-    'Nobody can measure the centre\u2019s mortality against the 15% benchmark.',
+    'Nobody can measure the centre\'s mortality against the 15% benchmark.',
   ],
   goals: [
     'G1: every patient is measured exactly once per day.',
@@ -70,12 +72,12 @@ export const PERSONAS: Persona[] = [
     job: 'Walk the ward in order and measure every patient once, before the doctors arrive.',
     pains: [
       'No shared view of who has been measured; the paper journal is checked by asking.',
-      'Under time pressure, a reading can land on the wrong patient\u2019s row.',
+      'Under time pressure, a reading can land on the wrong patient\'s row.',
       'Measuring the same patient twice wastes the scarcest resource: her time.',
     ],
     changes: [
       'A rounds sheet sorted by bed with a live count: "41 of 74 measured".',
-      'One large input per patient; the sheet header always shows bed, name, age and yesterday\u2019s reading, so the wrong-patient case is caught before saving.',
+      'One large input per patient; the sheet header always shows bed, name, age and yesterday\'s reading, so the wrong-patient case is caught before saving.',
       'Undo and correct recover mistakes without re-asking a supervisor.',
     ],
   },
@@ -91,7 +93,7 @@ export const PERSONAS: Persona[] = [
     changes: [
       'A queue grouped the way he works: needs attention, ready for discharge, ready to visit, waiting for temperature, visited today.',
       'Eligible patients are pinned with a "Ready for discharge" chip, computed by the system.',
-      'Approve discharge is one action, and it counts as the day\u2019s visit if none was logged.',
+      'Approve discharge is one action, and it counts as the day\'s visit if none was logged.',
     ],
   },
   {
@@ -101,7 +103,7 @@ export const PERSONAS: Persona[] = [
     pains: [
       'Mortality is not measurable on paper without a manual count.',
       'Daily compliance (measured, visited) is invisible until something goes wrong.',
-      'Exceptions \u2014 missed readings, doctor-recorded temperatures \u2014 leave no trace.',
+      'Missed readings and doctor-recorded temperatures leave no trace.',
     ],
     changes: [
       'A dashboard that leads with one plain-language sentence about mortality, numerator and denominator always shown.',
@@ -138,40 +140,40 @@ export const METRICS: MetricRow[] = [
     metric: 'Discharge delay',
     kind: 'North star',
     definition:
-      'Days from the day a patient first became eligible to the day admin completed the discharge. Also reported as bed-days held after eligibility \u2014 the capacity cost.',
+      'Days from the day a patient first became eligible to the day admin completed the discharge. Also reported as bed-days held after eligibility, the capacity cost.',
     target:
       'Approaches zero. The head doctor reports 1 to 2 extra days today on paper; baseline unknown, to be measured in a pilot. All targets proposed, to validate with the head doctor.',
   },
   {
     metric: 'Temperature compliance',
     kind: 'Input',
-    definition: 'Patients with a reading today \u00f7 patients in beds, with the pending names shown.',
+    definition: 'Patients with a reading today divided by patients in beds, with the pending names shown.',
     target: '100% by end of shift. Proposed, to validate with the head doctor.',
   },
   {
     metric: 'Visits logged after the temperature',
     kind: 'Input',
-    definition: 'Visits whose patient already had a reading that day \u00f7 all visits.',
+    definition: 'Visits whose patient already had a reading that day divided by all visits.',
     target: '100%. Proposed, to validate with the head doctor.',
   },
   {
     metric: 'Doctor sign-off latency',
     kind: 'Input',
-    definition: 'Days from eligibility to the doctor\u2019s discharge approval.',
+    definition: 'Days from eligibility to the doctor\'s discharge approval.',
     target: 'Same day. Proposed, to validate with the head doctor.',
   },
   {
     metric: 'Mortality versus benchmark',
     kind: 'Guardrail',
     definition:
-      'Deaths \u00f7 (deaths + cured discharges) over closed cases, with the sample size shown. Alert only above 15%, amber from 13%, silent below 20 closed cases.',
+      'Deaths divided by all closed cases (deaths plus cured discharges), with the sample size shown. Alert only above 15%, amber from 13%, silent below 20 closed cases.',
     target: 'At or below the 15% benchmark, or flagged in plain language.',
   },
   {
     metric: 'Zero unexamined discharges',
     kind: 'Guardrail',
     definition: 'Discharges approved without a qualifying reading on the approval day.',
-    target: 'Zero, by construction \u2014 the system blocks it.',
+    target: 'Zero. The system blocks it.',
   },
   {
     metric: 'Process exceptions',
@@ -190,7 +192,7 @@ export const REQUIREMENTS_BY_PRIORITY: PriorityRow[] = [
   {
     priority: 'Must',
     items:
-      'The daily loop and its safety rails. One reading per patient-day (R1), validated input (R3), fever at 38.0 (R4), needs-attention flag (R5), corrections that never overwrite (R8), visits only after the temperature (R13), the fever-free streak (R16), computed eligibility (R17), doctor approves (R18), admin completes (R20), capacity block (R24), admission validation (R25), mortality and compliance metrics (R27\u2013R30), server-side permissions (R31), audit (R32), blocked actions explain (R35).',
+      'The daily loop and its safety rails. One reading per patient-day (R1), validated input (R3), fever at 38.0 (R4), needs-attention flag (R5), corrections that never overwrite (R8), visits only after the temperature (R13), the fever-free streak (R16), computed eligibility (R17), doctor approves (R18), admin completes (R20), capacity block (R24), admission validation (R25), mortality and compliance metrics (R27 to R30), server-side permissions (R31), audit (R32), blocked actions explain (R35).',
   },
   {
     priority: 'Should',
@@ -202,7 +204,7 @@ export const REQUIREMENTS_BY_PRIORITY: PriorityRow[] = [
     items: 'Weekly mortality trend on the dashboard; a guided demo tour for first-time reviewers.',
   },
   {
-    priority: 'Won\u2019t',
+    priority: 'Won\'t',
     items:
       'Everything in the non-goals list: diagnosis, prescribing, billing, hospital-record integration, multi-facility, patient access, push notifications, offline sync.',
   },
@@ -227,14 +229,14 @@ export const USER_STORIES: UserStory[] = [
       'A patient in bed A-12 has two consecutive fever-free days and no reading today.',
     when: 'The nurse records 37.0 \u00b0C.',
     then:
-      'The row moves to Done, the toast says "37.0 \u00b0C recorded, no fever", the ladder fills to 3 of 3, and the patient appears in the doctor\u2019s ready queue.',
+      'The row moves to Done, the toast says "37.0 \u00b0C recorded, no fever", the ladder fills to 3 of 3, and the patient appears in the doctor\'s ready queue.',
     rules: 'R1, R3, R4, R16',
   },
   {
     id: 'US2',
     role: 'Nurse',
     title: 'A duplicate is blocked',
-    given: 'Today\u2019s reading for the patient is already saved.',
+    given: 'Today\'s reading for the patient is already saved.',
     when: 'The nurse tries to record the temperature again.',
     then:
       'The save is blocked: "Already recorded today: 37.2 \u00b0C at 09:14 by Nurse Asha. Use Correct reading if this was wrong."',
@@ -257,7 +259,7 @@ export const USER_STORIES: UserStory[] = [
     given: 'A third consecutive qualifying reading is saved.',
     when: 'The system recomputes eligibility.',
     then:
-      'The patient is pinned in the doctor\u2019s queue with a "Ready for discharge" chip and appears in admin\u2019s "Eligible, awaiting doctor sign-off" list \u2014 with no message from any person.',
+      'The patient moves into the doctor\'s "Ready for discharge" group and appears in admin\'s "Eligible, awaiting doctor sign-off" list, with no message from any person.',
     rules: 'R16, R17',
   },
   {
@@ -267,7 +269,7 @@ export const USER_STORIES: UserStory[] = [
     given: 'The patient is eligible and has a qualifying reading today.',
     when: 'The doctor approves the discharge.',
     then:
-      'Status becomes DISCHARGE_APPROVED, the approval counts as the day\u2019s visit if none was logged, and admin\u2019s ready list gains the patient.',
+      'Status becomes DISCHARGE_APPROVED, the approval counts as the day\'s visit if none was logged, and admin\'s ready list gains the patient.',
     rules: 'R17, R18',
   },
   {
@@ -294,10 +296,10 @@ export const USER_STORIES: UserStory[] = [
     id: 'US8',
     role: 'Anyone (demo control)',
     title: 'Advance the day',
-    given: 'The day\u2019s work is done and the demo menu is open.',
+    given: 'The day\'s work is done and the demo menu is open.',
     when: 'Anyone advances to the next day.',
     then:
-      'Every patient returns to To measure, yesterday\u2019s unmeasured patients show a visible gap in their charts, and Reset demo data restores the start state.',
+      'Every patient returns to To measure, yesterday\'s unmeasured patients show a visible gap in their charts, and Reset demo data restores the start state.',
     rules: 'R2, R33',
   },
 ]
@@ -316,7 +318,7 @@ export const NON_FUNCTIONAL: Nfr[] = [
   {
     area: 'Privacy',
     requirement:
-      'This prototype never holds real patient data. India\u2019s DPDP Act applies before any real data is entered: per-user accounts, purpose limitation, data minimisation and a consent basis must be in place first (see Production path).',
+      'This prototype never holds real patient data. India\'s DPDP Act applies before any real data is entered: per-user accounts, purpose limitation, data minimisation and a consent basis must be in place first (see Production path).',
   },
   {
     area: 'Availability',
@@ -349,7 +351,7 @@ export const RISKS: Risk[] = [
   {
     risk: 'Wrong-patient entry',
     mitigation:
-      'The entry sheet always shows bed, name, age and yesterday\u2019s reading; confirmation dialogs name the patient and the bed. The database keeps every correction \u2014 a wrong entry is recoverable, never silently lost.',
+      'The entry sheet always shows bed, name, age and yesterday\'s reading; confirmation dialogs name the patient and the bed. The database keeps every correction, so a wrong entry is recoverable and never silently lost.',
   },
   {
     risk: 'Data-entry burden on understaffed nurses',
@@ -369,7 +371,7 @@ export const RISKS: Risk[] = [
   {
     risk: 'Clinical liability',
     mitigation:
-      'The doctor decides; the system removes the delay, not the decision. WardRound schedules the required process and surfaces eligibility \u2014 it offers no diagnosis and no clinical suggestion.',
+      'The doctor decides; the system removes the delay, not the decision. WardRound schedules the required process and surfaces eligibility. It offers no diagnosis and no clinical suggestion.',
   },
 ]
 
@@ -385,18 +387,18 @@ export const ROLLOUT: RolloutPhase[] = [
     what:
       'The app runs beside the paper journal for one shift. Nurses keep the paper process; the app records the same events in parallel.',
     exit:
-      'The app\u2019s end-of-shift compliance numbers match the paper journal, and staff report the app added no time to the round.',
+      'The app\'s end-of-shift compliance numbers match the paper journal, and staff report the app added no time to the round.',
   },
   {
     phase: 'One ward with a champion',
     what:
       'One ward switches over, led by a nurse who has used the shadow shift. The paper journal becomes the fallback, not the process.',
     exit:
-      'A week of the ward\u2019s temperature and visit compliance holding, discharge delay visible and not worsening, and the champion able to train a colleague in under 10 minutes.',
+      'A week of the ward\'s temperature and visit compliance holding, discharge delay visible and not worsening, and the champion able to train a colleague in under 10 minutes.',
   },
   {
     phase: 'Whole centre',
-    what: 'All 74 beds switch. The dashboard enters the head doctor\u2019s routine.',
+    what: 'All 74 beds switch. The dashboard enters the head doctor\'s routine.',
     exit:
       'Daily compliance reported without manual counting, and the mortality figure reviewed weekly with the sample size in view.',
   },
@@ -406,7 +408,7 @@ export const ROLLOUT_NOTES = {
   downtime:
     'Downtime plan: the paper journal stays printed. When the network returns, the doctor back-enters missed readings for the previous day with a reason (late entry), and nothing lost is ever shown as saved.',
   training:
-    'Training: under 10 minutes per role. Each screen does one job \u2014 measure, visit, approve, complete \u2014 and every blocked action explains itself.',
+    'Training: under 10 minutes per role. Each screen does one job: measure, visit, approve or complete. Every blocked action explains itself.',
 }
 
 // --- 2. how it works ---------------------------------------------------------
@@ -477,7 +479,7 @@ export const STREAK_TABLE = {
       d1: '36.9',
       d: 'none',
       streak: '3 (D not yet measured, counts from D-1)',
-      eligible: 'yes, needs today\u2019s reading before approval',
+      eligible: 'yes, needs today\'s reading before approval',
     },
     {
       d3: '37.1',
@@ -514,7 +516,7 @@ export const RULE_REASONING: RuleReasoning[] = [
   },
   {
     id: 'R18',
-    why: 'Approval needs eligibility and a qualifying reading today \u2014 the system blocks a discharge that would otherwise rest on a stale fever-free streak.',
+    why: 'Approval needs eligibility and a qualifying reading today, so the system blocks a discharge that would rest on a stale fever-free streak.',
   },
   {
     id: 'R32',
@@ -527,7 +529,6 @@ export const RULE_REASONING: RuleReasoning[] = [
 // Copy for the generated permission matrix. The allow/deny cells come from
 // can(); these notes only annotate cells where the truth is more specific
 // than a boolean (exception paths and windows).
-import type { Permission, Role } from '@/domain/permissions'
 
 export interface RbacColumn {
   label: string
@@ -543,15 +544,15 @@ export const RBAC_COLUMNS: RbacColumn[] = [
 ]
 
 export const RBAC_CELL_NOTES: Record<string, string> = {
-  'reading.record|DOCTOR': 'exception only, with a reason (R11)',
-  'reading.record|HEAD': 'exception only, with a reason (R11)',
-  'reading.correct|NURSE': 'today\u2019s reading, until the visit is logged',
-  'reading.correct|DOCTOR': 'any open reading, with a reason',
-  'reading.correct|HEAD': 'any open reading, with a reason',
+  'reading.record|Doctor': 'exception only, with a reason (R11)',
+  'reading.record|Head doctor': 'exception only, with a reason (R11)',
+  'reading.correct|Nurse': 'today\'s reading, until the visit is logged',
+  'reading.correct|Doctor': 'any open reading, with a reason',
+  'reading.correct|Head doctor': 'any open reading, with a reason',
 }
 
 export const RBAC_FOOTNOTES = [
-  'Every cell above is computed live from can() in src/domain/permissions.ts \u2014 the same function the Worker enforces on every route \u2014 so this matrix cannot drift from what the server actually allows.',
+  'Every cell above is computed live from can() in src/domain/permissions.ts, the same function the Worker enforces on every route. The matrix cannot drift from what the server allows.',
   'demo.control (advance day, reset) is available to everyone in demo mode and is deliberately outside this matrix; the About page says so.',
 ]
 
@@ -573,7 +574,7 @@ export const DATA_MODEL = {
   intro:
     'Eight tables in one D1 database. Every visitor signs into an isolated workspace, so all tables use the composite key (ws_id, id).',
   tables: [
-    ['workspaces', 'One row per visitor workspace; holds current_day \u2014 the clock the whole domain runs on.'],
+    ['workspaces', 'One row per visitor workspace. Holds current_day, the clock the whole domain runs on.'],
     ['staff', 'Demo staff per workspace: name, role, is_head. The role on every request is read here.'],
     ['patients', 'Name, age, sex, bed, status, admitted_day, first_eligible_day, outcome for closed cases.'],
     ['readings', 'Temperature per patient-day, with masked and late_entry flags, recorder, reason, supersedes_id.'],
@@ -583,10 +584,10 @@ export const DATA_MODEL = {
     ['meta', 'Small key-value table; holds the session secret if no Wrangler secret is set (see Decisions).'],
   ] as Array<[string, string]>,
   constraints: [
-    'Partial unique index on readings (ws_id, patient_id, day) WHERE status = \u2019active\u2019 \u2014 exactly one active reading per patient per day (R1).',
-    'Unique index on visits (ws_id, patient_id, day) \u2014 one visit per patient per day (R12).',
-    'Partial unique index on patients (ws_id, bed) WHERE the bed is occupied \u2014 one patient per bed (R25).',
-    'CHECK constraints: temperature within 30.0\u201345.0, patient status and sex within their lists, ages 0\u2013120.',
+    'Partial unique index on readings (ws_id, patient_id, day) WHERE status = \'active\'. Exactly one active reading per patient per day (R1).',
+    'Unique index on visits (ws_id, patient_id, day). One visit per patient per day (R12).',
+    'Partial unique index on patients (ws_id, bed) WHERE the bed is occupied. One patient per bed (R25).',
+    'CHECK constraints: temperature within 30.0 to 45.0, patient status and sex within their lists, ages 0 to 120.',
     'Foreign keys on (ws_id, patient_id) from readings and visits to patients.',
     'Corrections never update history away: a new reading supersedes the old one via supersedes_id, with a reason. The original stays.',
   ],
@@ -594,17 +595,17 @@ export const DATA_MODEL = {
 
 export const SANDBOX = {
   intro:
-    'Every visitor gets an isolated workspace copied from a seeded template, so one reviewer cannot corrupt another\u2019s demo.',
+    'Every visitor gets an isolated workspace copied from a seeded template, so one reviewer cannot corrupt another\'s demo.',
   points: [
     'A template workspace is generated once by a deterministic script (fixed seed, fictional names) and never edited.',
-    'Creating a visitor workspace copies the template with a few INSERT ... SELECT statements \u2014 fast, never row by row.',
-    '"Advance to next day" changes only that workspace\u2019s clock; "Reset demo data" deletes and re-copies the visitor\u2019s workspace.',
+    'Creating a visitor workspace copies the template with a few INSERT ... SELECT statements, so it is fast and never row by row.',
+    '"Advance to next day" changes only that workspace\'s clock; "Reset demo data" deletes and re-copies the visitor\'s workspace.',
     'Stale workspaces (older than 7 days) are purged lazily when new ones are created; a cap of 300 active workspaces returns a friendly 503 beyond that.',
   ],
 }
 
 export const PRACTICES = [
-  'Spec-first domain: the rules in the brief are pure functions in src/domain with 152 unit and property tests named by rule id. The Worker and the React app import the same module \u2014 there is no second implementation to drift.',
+  'Spec-first domain: the rules in the brief are pure functions in src/domain with 152 unit and property tests named by rule id. The Worker and the React app import the same module, so there is no second implementation to drift.',
   'The database is the last line of defence: if a caller bypasses the domain checks, the partial unique indexes and CHECK constraints still stop the bad write.',
   'Append-only audit: every mutation and its audit row are written in one D1 batch. Corrections supersede; nothing clinical is deleted.',
   'Conventional commits, one commit per logical change; a GitHub Actions workflow runs typecheck, lint, test and build. Local runs of the same four are the release contract.',
@@ -643,7 +644,7 @@ export const DECISIONS: DecisionRow[] = [
   {
     decision: 'A per-visitor sandbox workspace',
     rejected: 'One shared demo dataset for every reviewer.',
-    why: 'Reviewers open the link on their own; without isolation, one person\u2019s "advance day" would corrupt everyone\u2019s demo mid-review.',
+    why: 'Reviewers open the link on their own; without isolation, one person\'s "advance day" would corrupt everyone\'s demo mid-review.',
     tradeoff: 'A workspace copy at sign-in, bounded by INSERT ... SELECT, a 7-day purge and a 300-workspace cap.',
   },
   {
@@ -655,24 +656,24 @@ export const DECISIONS: DecisionRow[] = [
   {
     decision: 'Mortality counts closed cases only',
     rejected: 'Counting current patients in the denominator.',
-    why: 'A current patient\u2019s outcome is unknown; including them makes the figure move with admissions instead of outcomes. Numerator and denominator are always shown.',
+    why: 'A current patient\'s outcome is unknown; including them makes the figure move with admissions instead of outcomes. Numerator and denominator are always shown.',
     tradeoff: 'The figure lags admissions, so the closed-case count is displayed next to it.',
   },
   {
     decision: 'Masked readings do not qualify toward the streak',
     rejected: 'Counting a masked reading as a clean day.',
-    why: 'A reading taken after fever-reducing medicine does not show the patient\u2019s own temperature. A suppressed fever is not a recovered patient.',
+    why: 'A reading taken after fever-reducing medicine does not show the patient\'s own temperature. A suppressed fever is not a recovered patient.',
     tradeoff: 'The streak is stricter and discharge may wait a day; whether that is the right clinical call is an open question for the head doctor.',
   },
   {
     decision: 'A non-qualifying reading today zeroes the count before approval',
     rejected: 'Approving on the strength of the streak alone.',
-    why: 'Approval requires a qualifying reading on the approval day. If today\u2019s reading is a fever or masked, the streak\u2019s momentum does not carry the discharge.',
+    why: 'Approval requires a qualifying reading on the approval day. If today\'s reading is a fever or masked, the streak\'s momentum does not carry the discharge.',
     tradeoff: 'The doctor must wait for a clean reading that day, even after three clean days.',
   },
   {
     decision: 'The workspace owns the clock',
-    rejected: 'Reading the device clock or the server\u2019s wall clock in domain logic.',
+    rejected: 'Reading the device clock or the server\'s wall clock in domain logic.',
     why: '"Today" must mean the same thing for a nurse, a doctor and admin working the same demo day, and tests must stay deterministic.',
     tradeoff: 'Domain functions take the day as an argument; audit rows combine the demo day with real wall-clock time.',
   },
@@ -680,7 +681,7 @@ export const DECISIONS: DecisionRow[] = [
     decision: 'The session secret bootstraps into a D1 meta table until a real Wrangler secret is set',
     rejected: 'Hard-failing the deployment without SESSION_SECRET.',
     why: 'A timed submission should not break on an optional step; the app still signs cookies with a generated secret stored in the meta table.',
-    tradeoff: 'The secret sits in the database until npx wrangler secret put SESSION_SECRET is run; that is why this is listed in the Production path, not just here.',
+    tradeoff: 'The secret sits in the database until npx wrangler secret put SESSION_SECRET is run, which is why the Production path lists it too.',
   },
 ]
 
@@ -689,7 +690,7 @@ export const DECISIONS: DecisionRow[] = [
 export const SCOPE_V1 = {
   intro: 'Version 1 is the daily loop, end to end, with the safety valves that touch it:',
   in: [
-    'The core loop: measure \u2192 visit \u2192 computed eligibility \u2192 doctor approval \u2192 admin completion, with the bed freed on the ward map.',
+    'The core loop: a nurse measures, a doctor visits, the system computes eligibility, the doctor approves, admin completes, and the bed frees on the ward map.',
     'Guard rails: duplicate block, validated input with confirmation bands, needs-attention flag, corrections that supersede, capacity block.',
     'Safety valves: masked readings, nurse undo, doctor late entry, approval auto-revocation when eligibility breaks.',
     'Ward operations: admission with duplicate warning, the waitlist, the ward map.',
@@ -706,7 +707,7 @@ export const SCOPE_V1 = {
     ['Multi-ward', 'the centre is one ward of 74 beds in the brief.'],
     ['Data export', 'useful for analysis, not for running the day; Later, once there is a pilot to analyse.'],
     ['Backups and monitoring', 'production-operations work, listed in the Production path.'],
-  ],
+  ] as Array<readonly [string, string]>,
 }
 
 export interface RoadmapItem {
@@ -764,7 +765,7 @@ export const ROADMAP: RoadmapItem[] = [
   {
     when: 'Later',
     item: 'Backups and monitoring',
-    why: 'Production operations \u2014 scheduled backups, error alerting, rate limiting \u2014 when real data makes them obligatory.',
+    why: 'Production operations: scheduled backups, error alerting and rate limiting, once real data makes them obligatory.',
   },
 ]
 
@@ -785,7 +786,7 @@ export const OPEN_QUESTIONS: OpenQuestion[] = [
   },
   {
     topic: 'What "3 full days" means',
-    assumption: 'Three consecutive daily readings below the threshold \u2014 measured days, not elapsed time.',
+    assumption: 'Three consecutive daily readings below the threshold, counted as measured days and not elapsed time.',
     question: 'Should it be three consecutive daily readings, or 72 hours since the last fever?',
   },
   {
@@ -793,11 +794,11 @@ export const OPEN_QUESTIONS: OpenQuestion[] = [
     assumption:
       'The nurse is asked whether medicine was given in the last 6 hours; a masked day does not qualify and breaks the count.',
     question:
-      'How should antipyretics count \u2014 does a masked day reset the streak entirely, or should it extend eligibility by requiring one more clean day?',
+      'How should fever-reducing medicine count? Does a masked day reset the streak entirely, or should it require one more clean day before eligibility?',
   },
   {
     topic: 'Missed days',
-    assumption: 'A missed day breaks the streak to zero; a doctor\u2019s late entry for the previous day recomputes it.',
+    assumption: 'A missed day breaks the streak to zero; a doctor\'s late entry for the previous day recomputes it.',
     question: 'Is the late-entry restoration clinically acceptable, or should a missed day always reset?',
   },
   {
@@ -838,7 +839,7 @@ export const PRODUCTION_PATH: ProductionChange[] = [
   {
     change: 'DPDP compliance',
     detail:
-      'India\u2019s Digital Personal Data Protection Act applies before any real patient data: consent basis, purpose limitation, minimisation, grievance process.',
+      'India\'s Digital Personal Data Protection Act applies before any real patient data: consent basis, purpose limitation, minimisation, grievance process.',
   },
   {
     change: 'Clinical sign-off on the rules',
@@ -884,13 +885,13 @@ export const DEMO_GUIDE: DemoStep[] = [
     step: 4,
     who: 'Nurse Asha',
     action: 'Open the Dashboard.',
-    expect: '"This area is for the Head Doctor" \u2014 and the API returns 403.',
+    expect: '"This area is for the Head Doctor." The API returns 403.',
   },
   {
     step: 5,
     who: 'Dr. Vikram Rao',
     action: 'Find the patient from step 1; note a Waiting-for-temperature patient; approve the discharge.',
-    expect: 'Ready for discharge; Log visit disabled with its reason; approval lands in admin\u2019s list.',
+    expect: 'Ready for discharge; Log visit disabled with its reason; approval lands in admin\'s list.',
   },
   {
     step: 6,
@@ -902,30 +903,32 @@ export const DEMO_GUIDE: DemoStep[] = [
     step: 7,
     who: 'Dr. Neha Kulkarni (head doctor)',
     action: 'Open the dashboard.',
-    expect: '"Mortality is 17.5%, above the 15% benchmark (7 of 40 closed cases)" and today\u2019s compliance.',
+    expect: '"Mortality is 17.5%, above the 15% benchmark (7 of 40 closed cases)" and today\'s compliance.',
   },
   {
     step: 8,
     who: 'Anyone',
     action: 'Advance to next day, then Reset demo data.',
-    expect: 'Everyone returns to To measure; yesterday\u2019s gaps show; reset restores the start.',
+    expect: 'Everyone returns to To measure; yesterday\'s gaps show; reset restores the start.',
   },
 ]
 
 export const DEMO_NOTE =
-  'Demo mode: choose a person on the sign-in screen. Every visitor gets their own copy of the ward, so you cannot break the demo for anyone else \u2014 and Reset demo data restores it at any time.'
+  'Demo mode: choose a person on the sign-in screen. Every visitor gets their own copy of the ward, so you cannot break the demo for anyone else. Reset demo data restores it at any time.'
 
 // --- 9. about the builder ----------------------------------------------------
 
-// The only {{placeholders}} in the app, filled by the human before release.
+// The only placeholders in the app, filled by the human before release.
+// scripts/check-placeholders.ts looks for open-brace open-brace sequences,
+// which these three fields contain on purpose.
 export const BUILDER = {
   name: '{{BUILDER_NAME}}',
   roleAndCollege: '{{ROLE_AND_COLLEGE}}',
   contact: '{{CONTACT}}',
   approach:
-    'I started from the head doctor\u2019s account of the ward, wrote the rules as a testable spec, and built outward from the daily loop. The product decisions are recorded with the alternatives they rejected, and the rules and permission tables on this page are generated from the code, so the documentation cannot quietly disagree with the app.',
+    'I started from the head doctor\'s account of the ward, wrote the rules as a testable spec, and built outward from the daily loop. The product decisions are recorded with the alternatives they rejected, and the rules and permission tables on this page are generated from the code, so the documentation cannot quietly disagree with the app.',
   ai:
     'I used AI tooling while building this, and I verified its output rather than trusting it: the domain rules are covered by 152 named unit and property tests, the permission matrix on this page is computed live from the same can() function the server enforces, and I walked the eight-step demo path end to end as each role. Anything I could not verify, I left out or marked as a proposal.',
   next:
-    'With a team, I would put a clinical reviewer and a staff nurse on the build from day one, run the shadow-shift pilot within the first fortnight, and split the work into a domain owner, a UI owner and a deployment owner \u2014 the seams this project already has.',
+    'With a team, I would put a clinical reviewer and a staff nurse on the build from day one, run the shadow-shift pilot within the first fortnight, and split the work into a domain owner, a UI owner and a deployment owner.',
 }

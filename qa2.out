@@ -1,0 +1,6 @@
+﻿day keys status,todayReading,yesterdayReading,visitToday,streak,eligible,flags,delayDays
+needs 0 
+actions discharge.approved,visit.logged,patient.admitted,discharge.completed,patient.record_death
+filter action discharge.approved 200 2
+filter patient p-008 200 2
+filter actor 200 13

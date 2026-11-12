@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "wardround" generated at 2026-11-12T12:36:43.767Z.

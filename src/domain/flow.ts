@@ -6,7 +6,8 @@ import { computeStreak, readingQualifies } from './streak'
 import { CONFIG } from './config'
 import { isValidBed } from './beds'
 import { dateAdd, dayDiff } from './dates'
-import type { Patient, Reading, Role, Visit } from './types'
+import type { Role } from './permissions'
+import type { Patient, Reading, Visit } from './types'
 
 export interface FlowError {
   code: string
@@ -36,7 +37,7 @@ export interface NewReadingArgs {
 }
 
 export function validateNewReading(args: NewReadingArgs): FlowError | null {
-  const { patient, today, existingActiveToday, prevReading, input, recordedByName } = args
+  const { patient, existingActiveToday, prevReading, input, recordedByName } = args
   if (!isActive(patient)) {
     return { code: 'R10_STATUS', message: 'This record is closed. Discharged and deceased records are read-only.' }
   }
