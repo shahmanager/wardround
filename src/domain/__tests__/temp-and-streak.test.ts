@@ -53,8 +53,10 @@ describe('R3: temperature input', () => {
   test('a jump of 2.0 °C or more from the previous reading needs confirmation', () => {
     expect(evaluateTempInput('38.8', 36.8).needsConfirm).toBe(true)
     expect(evaluateTempInput('38.7', 36.8).needsConfirm).toBe(false)
-    expect(evaluateTempInput('34.8', 36.8).needsConfirm).toBe(true)
-    expect(evaluateTempInput('34.9', 36.8).needsConfirm).toBe(false)
+    expect(evaluateTempInput('38.5', 40.5).needsConfirm).toBe(true)
+    expect(evaluateTempInput('38.6', 40.5).needsConfirm).toBe(false)
+    // below 35.0 always needs confirmation, even without a jump
+    expect(evaluateTempInput('34.9', 36.8).needsConfirm).toBe(true)
   })
   test('fever flag at the exact threshold (R4)', () => {
     expect(evaluateTempInput('37.9', null).fever).toBe(false)

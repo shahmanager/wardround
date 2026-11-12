@@ -1,0 +1,16 @@
+// Barrel: the shared domain. Both the Worker and the React app import from
+// here; there is no second implementation of any rule.
+export { CONFIG } from './config'
+export * from './types'
+export { PERMISSIONS, ROLE_LABELS, can } from './permissions'
+export type { Permission, Role } from './permissions'
+export { RULES, ruleById } from './rules'
+export type { Rule, RuleArea } from './rules'
+export * from './beds'
+export * from './dates'
+export { evaluateTempInput, formatTemp } from './temp'
+export type { TempEvaluation, TempInputCode } from './temp'
+export { computeStreak, readingQualifies } from './streak'
+export { evaluatePatientDay } from './patient-day'
+export * from './flow'
+export * from './metrics'

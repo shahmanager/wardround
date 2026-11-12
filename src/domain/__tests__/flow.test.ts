@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { evaluatePatientDay } from '../patient-day'
-import { validateAdmission, validateApprove, validateCompleteDischarge, validateCorrection, validateDeath, validateLateEntry, validateNewReading, validateUndo, validateVisit, approvalInvalidated } from '../flow'
+import { approvalInvalidated, validateAdmission, validateApprove, validateCompleteDischarge, validateCorrection, validateDeath, validateDoctorReading, validateLateEntry, validateNewReading, validateUndo, validateVisit } from '../flow'
 import { pt, rd, START, day, vt } from './helpers'
 
 const admitted = day(10)
@@ -212,7 +212,7 @@ describe('R9: late entry for the previous day', () => {
     expect(validateLateEntry({ patient: pt({ admittedDay: day(9) }), targetDay: day(1), today: START, reason: 'x', existingActiveOnTarget: rd('p-001', 1, 36.9) })).toMatchObject({ code: 'R1_DUPLICATE' })
   })
   test('blocked before admission', () => {
-    expect(validateLateEntry({ patient: pt({ admittedDay: day(1) }), targetDay: day(1), today: START, reason: 'x', existingActiveOnTarget: null })).toMatchObject({ code: 'R9_BEFORE_ADMISSION' })
+    expect(validateLateEntry({ patient: pt({ admittedDay: START }), targetDay: day(1), today: START, reason: 'x', existingActiveOnTarget: null })).toMatchObject({ code: 'R9_BEFORE_ADMISSION' })
   })
   test('passes for yesterday when nothing exists', () => {
     expect(validateLateEntry({ patient: pt({ admittedDay: day(9) }), targetDay: day(1), today: START, reason: 'journal recovered', existingActiveOnTarget: null })).toBeNull()
@@ -244,12 +244,12 @@ describe('R24/R25: admission', () => {
     expect(e).toMatchObject({ code: 'R25_BED_TAKEN' })
   })
   test('possible duplicate needs confirmation', () => {
-    const e = validateAdmission({ name: 'ramesh kumar', age: 42, sex: 'M', bed: 'A-1', occupiedCount: 73, occupiedBeds: beds, existingPatients: [pt({ name: 'Ramesh Kumar', age: 42 })], confirmDuplicate: false })
+    const e = validateAdmission({ name: 'ramesh kumar', age: 42, sex: 'M', bed: 'A-39', occupiedCount: 73, occupiedBeds: beds, existingPatients: [pt({ name: 'Ramesh Kumar', age: 42 })], confirmDuplicate: false })
     expect(e).toMatchObject({ code: 'R25_DUPLICATE' })
   })
   test('confirmed duplicate passes; different age does not warn', () => {
-    expect(validateAdmission({ name: 'Ramesh Kumar', age: 42, sex: 'M', bed: 'A-1', occupiedCount: 73, occupiedBeds: beds, existingPatients: [pt({ name: 'Ramesh Kumar', age: 42 })], confirmDuplicate: true })).toBeNull()
-    expect(validateAdmission({ name: 'Ramesh Kumar', age: 43, sex: 'M', bed: 'A-1', occupiedCount: 73, occupiedBeds: beds, existingPatients: [pt({ name: 'Ramesh Kumar', age: 42 })], confirmDuplicate: false })).toBeNull()
+    expect(validateAdmission({ name: 'Ramesh Kumar', age: 42, sex: 'M', bed: 'A-39', occupiedCount: 73, occupiedBeds: beds, existingPatients: [pt({ name: 'Ramesh Kumar', age: 42 })], confirmDuplicate: true })).toBeNull()
+    expect(validateAdmission({ name: 'Ramesh Kumar', age: 43, sex: 'M', bed: 'A-39', occupiedCount: 73, occupiedBeds: beds, existingPatients: [pt({ name: 'Ramesh Kumar', age: 42 })], confirmDuplicate: false })).toBeNull()
   })
   test('invalid fields are rejected', () => {
     expect(validateAdmission({ name: '  ', age: 30, sex: 'M', bed: 'A-1', occupiedCount: 73, occupiedBeds: beds, existingPatients: [], confirmDuplicate: false })).toMatchObject({ code: 'R25_FIELDS' })

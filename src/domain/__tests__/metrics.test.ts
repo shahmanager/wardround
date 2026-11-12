@@ -29,9 +29,13 @@ describe('R27/R28: mortality', () => {
     expect(mortalityStats(cases).band).toBe('amber')
   })
   test('the amber band runs from 13%', () => {
-    const cases = [...Array(5)].map((_, i) => closedCase('died', 30 + i, 31 + i))
-      .concat([...Array(35)].map((_, i) => closedCase('cured', 30 + i, 31 + i)))
+    const cases = [...Array(13)].map((_, i) => closedCase('died', 30 + i, 31 + i))
+      .concat([...Array(87)].map((_, i) => closedCase('cured', 30 + i, 31 + i)))
     expect(mortalityStats(cases).band).toBe('amber')
+    // just below 13%: ok (5 of 40 = 12.5%)
+    const below = [...Array(5)].map((_, i) => closedCase('died', 30 + i, 31 + i))
+      .concat([...Array(35)].map((_, i) => closedCase('cured', 30 + i, 31 + i)))
+    expect(mortalityStats(below).band).toBe('ok')
   })
   test('below the amber band: ok', () => {
     const cases = [...Array(4)].map((_, i) => closedCase('died', 30 + i, 31 + i))

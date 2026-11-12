@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest'
 import type { Outcome, Patient, Reading, Role, Visit } from '../types'
 import type { Permission } from '../permissions'
 import { can } from '../permissions'
