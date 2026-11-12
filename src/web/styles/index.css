@@ -1,18 +1,18 @@
-// Design tokens: ward-signage identity (plan section 8). Tailwind v4 reads
-// these via @theme; components reference the tokens, never raw hex values.
+/* Design tokens: ward-signage identity (plan section 8). Tailwind v4 reads
+   these via @theme; components reference the tokens, never raw hex values. */
 @import 'tailwindcss';
 
 @theme {
-  --color-gauze: #edf1f2; /* page background */
-  --color-ink: #13222e; /* text, primary buttons */
-  --color-muted: #566876; /* secondary text */
-  --color-mercury: #c62f18; /* fever, needs-attention, alerts — nothing else */
-  --color-signal: #8a5200; /* warning text */
-  --color-signal-tint: #fbe8bd; /* warning background */
-  --color-done: #1e7a4a; /* completed, fever-free */
-  --color-focus: #2457c5; /* focus rings, links */
-  --color-chart-grid: #cfe0da; /* observation chart paper only */
-  --color-tape: #f5c400; /* caution strip only */
+  --color-gauze: #edf1f2;
+  --color-ink: #13222e;
+  --color-muted: #566876;
+  --color-mercury: #c62f18;
+  --color-signal: #8a5200;
+  --color-signal-tint: #fbe8bd;
+  --color-done: #1e7a4a;
+  --color-focus: #2457c5;
+  --color-chart-grid: #cfe0da;
+  --color-tape: #f5c400;
 
   --font-signage: 'Barlow Semi Condensed', system-ui, sans-serif;
   --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;

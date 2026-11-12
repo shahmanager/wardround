@@ -167,11 +167,15 @@ for (let i = 0; i < 4; i++) {
   const admBack = 5 + i
   p.admittedDay = day(admBack)
   p.statusChangedDay = day(admBack)
-  const breakAt = i % 2 === 0 ? 3 : -1 // D-3 fever, or D-3 missing
-  addReading(p.id, 2, temp(37.0), nurses[i % 3]!, `${day(2)}T08:00:00Z`)
+  const base = 37.0
+  addReading(p.id, 2, temp(base), nurses[i % 3]!, `${day(2)}T08:00:00Z`)
   addReading(p.id, 1, temp(36.9), nurses[(i + 1) % 3]!, `${day(1)}T08:00:00Z`)
-  history(p, 1, breakAt)
-  if (breakAt === 3) addReading(p.id, 3, 38.4, nurses[(i + 2) % 3]!, `${day(3)}T08:00:00Z`)
+  for (let b = admBack; b > 3; b--) {
+    addReading(p.id, b, temp(36.8 + rnd() * 0.8), nurses[b % 3]!, `${day(b)}T08:00:00Z`)
+  }
+  if (i % 2 === 0) {
+    addReading(p.id, 3, 38.4, nurses[(i + 2) % 3]!, `${day(3)}T08:00:00Z`) // fever breaks the streak
+  } // odd i: D-3 is a missing day — the gap breaks the streak
 }
 
 // p-005, p-006 eligible, measured today, not visited (approvable now)
@@ -272,8 +276,8 @@ for (let i = 14; i <= 38; i++) {
   p.statusChangedDay = day(admBack)
   const breakAt = [2, -1, 4][i % 3] // keep everyone ineligible: fever on D-2, none, fever on D-4
   history(p, 0, breakAt)
-  if (breakAt === 2) addReading(p.id, 2, 38.5, 'nurse-kavya', `${day(2)}T08:00:00Z`)
-  if (breakAt === 4) addReading(p.id, 4, 38.3, 'nurse-asha', `${day(4)}T08:00:00Z`)
+  if (breakAt === 2 && admBack !== 2) addReading(p.id, 2, 38.5, 'nurse-kavya', `${day(2)}T08:00:00Z`)
+  if (breakAt === 4 && admBack !== 4) addReading(p.id, 4, 38.3, 'nurse-asha', `${day(4)}T08:00:00Z`)
   const at = `${D}T0${7 + (i % 2)}:${String(30 + (i % 6) * 5).padStart(2, '0')}:00Z`
   addReading(p.id, 0, temp(36.9), nurses[i % 3]!, at)
   if (i <= 24) {
