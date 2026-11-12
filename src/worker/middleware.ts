@@ -38,10 +38,10 @@ export const requireSession: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (!staff || !currentDay) {
     return apiError(c, 401, 'NO_SESSION', 'The workspace no longer exists. Sign in again.')
   }
-  await c.env.DB
-    .prepare('UPDATE workspaces SET last_active_at = ? WHERE id = ?')
-    .bind(new Date().toISOString(), payload.wsId)
-    .run()
+  // The session cookie is signed and short-lived; the workspace's own data is
+  // not evidence of anything, so a read must not cost a write. Touching
+  // last_active_at on every request burned the free-tier row budget and made
+  // every GET fail once the cap was reached.
   c.set('staff', staff)
   c.set('principal', {
     workspaceId: payload.wsId,

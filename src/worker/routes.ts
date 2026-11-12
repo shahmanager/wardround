@@ -3,7 +3,7 @@
 // bodies hold sequencing only — no rule logic lives here.
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { getCookie, setCookie } from 'hono/cookie'
+import { setCookie } from 'hono/cookie'
 import { z } from 'zod'
 import {
   approvalInvalidated,
@@ -38,14 +38,11 @@ import {
   clearedSessionCookie,
   getSessionSecret,
   sessionCookie,
-  verifyVisitorToken,
   visitorCookieValue,
   VISITOR_COOKIE,
   VISITOR_TTL_S,
 } from './auth'
 import {
-  copyStatements,
-  countActiveWorkspaces,
   getPatient,
   getReading,
   getTemplateDay,
@@ -57,14 +54,15 @@ import {
   listReadings,
   listVisits,
   listWaitlist,
-  one,
-  purgeStatements,
   resetStatements,
 } from './db'
 import { apiError, mutationGuard, requirePermission, requireSession, securityHeaders } from './middleware'
 import { reports } from './reports'
 
 type Db = AppEnv['Bindings']['DB']
+
+/** The single shared demo ward every visitor works on. */
+const SHARED_WORKSPACE_ID = 'template'
 
 const nowIso = (): string => new Date().toISOString()
 /** Audit timestamps combine the workspace day with the wall-clock time (R33). */
@@ -181,36 +179,14 @@ routes.post('/session', mutationGuard, async (c) => {
   const staff = await getTemplateStaff(c.env.DB, body.staffId)
   if (!staff) return apiError(c, 401, 'NO_SESSION', 'Unknown staff member. Choose a name from the sign-in list.')
   const secret = await getSessionSecret(c.env.DB, c.env.SESSION_SECRET)
-  const at = new Date().toISOString()
 
-  let wsId: string
-  let currentDay: string
-  const visitorToken = getCookie(c, VISITOR_COOKIE)
-  const visitor = visitorToken ? await verifyVisitorToken(secret, visitorToken) : null
-  const existing = visitor
-    ? await one(c.env.DB, 'SELECT id, current_day FROM workspaces WHERE id = ?', visitor.wsId)
-    : null
-  if (existing) {
-    wsId = String(existing.id)
-    currentDay = String(existing.current_day)
-    await c.env.DB.prepare('UPDATE workspaces SET last_active_at = ? WHERE id = ?').bind(at, wsId).run()
-  } else {
-    const now = new Date()
-    const cutoff = new Date(now.getTime() - CONFIG.WORKSPACE_TTL_DAYS * 86_400_000).toISOString()
-    await c.env.DB.batch(purgeStatements(c.env.DB, cutoff))
-    if ((await countActiveWorkspaces(c.env.DB)) >= CONFIG.WORKSPACE_MAX_ACTIVE) {
-      return apiError(c, 503, 'WORKSPACE_LIMIT', 'The demo ward is full right now. Please try again in a little while.')
-    }
-    const templateDay = await getTemplateDay(c.env.DB)
-    if (!templateDay) return apiError(c, 500, 'INTERNAL', 'The template workspace is missing. Re-run the seed.')
-    wsId = crypto.randomUUID()
-    currentDay = templateDay
-    await c.env.DB.batch([
-      c.env.DB.prepare('INSERT INTO workspaces (id, current_day, created_at, last_active_at) VALUES (?, ?, ?, ?)').bind(wsId, currentDay, at, at),
-      ...copyStatements(c.env.DB, wsId),
-    ])
-  }
-
+  // One shared demo ward, and signing in is a pure read. The free-tier D1 row
+  // budget is spent by reviewers using the app, not by copying the template per
+  // visitor or by bookkeeping on a cookie that already names the workspace.
+  const templateDay = await getTemplateDay(c.env.DB)
+  if (!templateDay) return apiError(c, 500, 'INTERNAL', 'The template workspace is missing. Re-run the seed.')
+  const wsId = SHARED_WORKSPACE_ID
+  const currentDay = templateDay
   c.header('Set-Cookie', await sessionCookie(secret, wsId, staff.id))
   setCookie(c, VISITOR_COOKIE, await visitorCookieValue(secret, wsId), {
     path: '/',

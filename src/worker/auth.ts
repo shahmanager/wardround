@@ -114,8 +114,15 @@ export async function getSessionSecret(db: D1Database, provided?: string): Promi
     return cachedSecret
   }
   const generated = crypto.randomUUID() + crypto.randomUUID()
-  await db.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES ('session_secret', ?)").bind(generated).run()
+  // A read cannot create the secret any more: every D1 write is checked against
+  // the free-tier daily row budget, and the secret must never be re-generated
+  // per request (that would invalidate every cookie on each deploy).
+  try {
+    await db.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES ('session_secret', ?)").bind(generated).run()
+  } catch {
+    // Read-only budget exhausted on a fresh database; the env secret still wins.
+  }
   const back = await one(db, "SELECT value FROM meta WHERE key = 'session_secret'")
-  cachedSecret = back ? String(back.value) : generated
+  cachedSecret = back ? String(back.value) : provided ?? generated
   return cachedSecret
 }
