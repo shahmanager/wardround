@@ -54,11 +54,6 @@ const staff: StaffRow[] = [
   ['admin-priya', 'Priya Menon', 'ADMIN', 0, 6],
 ]
 const nurses = ['nurse-asha', 'nurse-imran', 'nurse-kavya']
-const nurseNames: Record<string, string> = {
-  'nurse-asha': 'Nurse Asha',
-  'nurse-imran': 'Nurse Imran',
-  'nurse-kavya': 'Nurse Kavya',
-}
 
 // --- rows ----------------------------------------------------------------------
 interface PatientRow {

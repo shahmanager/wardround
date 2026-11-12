@@ -535,8 +535,14 @@ export function NurseScreen() {
     if (active) {
       setJustRecorded({ patientId: active.id, from: active.day.yesterdayReading?.tempC ?? null })
     }
+    // Staying on To measure would unmount the only animating Done row, so the
+    // gauge rise would never be seen. When the nurse stops (no next patient),
+    // show Done so the saved row and its gauge animation are visible.
     if (saveAndNext && nextPatient) setActiveId(nextPatient.id)
-    else setActiveId(null)
+    else {
+      setActiveId(null)
+      if (active) setTab('done')
+    }
   }
 
   const undo = useMutation({

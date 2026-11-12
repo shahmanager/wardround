@@ -3,6 +3,7 @@
 // bodies hold sequencing only — no rule logic lives here.
 import { Hono } from 'hono'
 import type { Context } from 'hono'
+import { getCookie, setCookie } from 'hono/cookie'
 import { z } from 'zod'
 import {
   approvalInvalidated,
@@ -33,7 +34,15 @@ import {
   type Visit,
 } from '../domain'
 import type { AppEnv } from './env'
-import { getSessionSecret, sessionCookie, clearedSessionCookie } from './auth'
+import {
+  clearedSessionCookie,
+  getSessionSecret,
+  sessionCookie,
+  verifyVisitorToken,
+  visitorCookieValue,
+  VISITOR_COOKIE,
+  VISITOR_TTL_S,
+} from './auth'
 import {
   copyStatements,
   countActiveWorkspaces,
@@ -48,6 +57,7 @@ import {
   listReadings,
   listVisits,
   listWaitlist,
+  one,
   purgeStatements,
   resetStatements,
 } from './db'
@@ -160,32 +170,59 @@ routes.get('/staff', async (c) => {
   return c.json({ staff: await getTemplateStaffList(c.env.DB) })
 })
 
-// Session creation: purge stale sandboxes, cap active workspaces, then copy
-// the template with fast INSERT...SELECT statements in one batch.
+// Session creation. A returning visitor keeps their workspace across sign-outs
+// and role switches, because the demo path swaps roles on one ward (PLAN
+// section 13). Only a first visit copies the template; the long-lived visitor
+// cookie carries the workspace id, never the staff identity.
 routes.post('/session', mutationGuard, async (c) => {
   const body = await parseBody(c, staffBody)
   if (!body) return apiError(c, 400, INVALID_BODY, 'Send { staffId }.')
   const staff = await getTemplateStaff(c.env.DB, body.staffId)
   if (!staff) return apiError(c, 401, 'NO_SESSION', 'Unknown staff member. Choose a name from the sign-in list.')
-  const now = new Date()
-  const cutoff = new Date(now.getTime() - CONFIG.WORKSPACE_TTL_DAYS * 86_400_000).toISOString()
-  await c.env.DB.batch(purgeStatements(c.env.DB, cutoff))
-  if ((await countActiveWorkspaces(c.env.DB)) >= CONFIG.WORKSPACE_MAX_ACTIVE) {
-    return apiError(c, 503, 'WORKSPACE_LIMIT', 'The demo ward is full right now. Please try again in a little while.')
-  }
-  const currentDay = await getTemplateDay(c.env.DB)
-  if (!currentDay) return apiError(c, 500, 'INTERNAL', 'The template workspace is missing. Re-run the seed.')
-  const wsId = crypto.randomUUID()
-  const at = now.toISOString()
-  await c.env.DB.batch([
-    c.env.DB.prepare('INSERT INTO workspaces (id, current_day, created_at, last_active_at) VALUES (?, ?, ?, ?)').bind(wsId, currentDay, at, at),
-    ...copyStatements(c.env.DB, wsId),
-  ])
   const secret = await getSessionSecret(c.env.DB, c.env.SESSION_SECRET)
+  const at = new Date().toISOString()
+
+  let wsId: string
+  let currentDay: string
+  const visitorToken = getCookie(c, VISITOR_COOKIE)
+  const visitor = visitorToken ? await verifyVisitorToken(secret, visitorToken) : null
+  const existing = visitor
+    ? await one(c.env.DB, 'SELECT id, current_day FROM workspaces WHERE id = ?', visitor.wsId)
+    : null
+  if (existing) {
+    wsId = String(existing.id)
+    currentDay = String(existing.current_day)
+    await c.env.DB.prepare('UPDATE workspaces SET last_active_at = ? WHERE id = ?').bind(at, wsId).run()
+  } else {
+    const now = new Date()
+    const cutoff = new Date(now.getTime() - CONFIG.WORKSPACE_TTL_DAYS * 86_400_000).toISOString()
+    await c.env.DB.batch(purgeStatements(c.env.DB, cutoff))
+    if ((await countActiveWorkspaces(c.env.DB)) >= CONFIG.WORKSPACE_MAX_ACTIVE) {
+      return apiError(c, 503, 'WORKSPACE_LIMIT', 'The demo ward is full right now. Please try again in a little while.')
+    }
+    const templateDay = await getTemplateDay(c.env.DB)
+    if (!templateDay) return apiError(c, 500, 'INTERNAL', 'The template workspace is missing. Re-run the seed.')
+    wsId = crypto.randomUUID()
+    currentDay = templateDay
+    await c.env.DB.batch([
+      c.env.DB.prepare('INSERT INTO workspaces (id, current_day, created_at, last_active_at) VALUES (?, ?, ?, ?)').bind(wsId, currentDay, at, at),
+      ...copyStatements(c.env.DB, wsId),
+    ])
+  }
+
   c.header('Set-Cookie', await sessionCookie(secret, wsId, staff.id))
+  setCookie(c, VISITOR_COOKIE, await visitorCookieValue(secret, wsId), {
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    maxAge: VISITOR_TTL_S,
+  })
   return c.json({ workspaceId: wsId, currentDay, staff })
 })
 
+// Clears the staff session only. VISITOR_COOKIE survives, so signing back in —
+// as another role, for the demo path — resumes the same visitor workspace.
 routes.delete('/session', (c) => {
   c.header('Set-Cookie', clearedSessionCookie())
   return c.body(null, 204)
@@ -369,7 +406,7 @@ routes.post('/reading/:id/correct', mutationGuard, requireSession, requirePermis
   const patient = await getPatient(db, p.workspaceId, old.patientId)
   if (!patient) return apiError(c, 404, 'NOT_FOUND', 'No such patient in this workspace.')
   const visitToday = (await listVisits(db, p.workspaceId, patient.id)).find((v) => v.day === p.currentDay) ?? null
-  let err = validateCorrection({ actorRole: p.role, reading: old, today: p.currentDay, visitToday, reason: body.reason })
+  const err = validateCorrection({ actorRole: p.role, reading: old, today: p.currentDay, visitToday, reason: body.reason })
   if (err) return domainError(c, err)
   const ev = evaluateTempInput(String(body.value), old.tempC)
   if (!ev.ok) return domainError(c, { code: ev.code ?? 'R3_RANGE', message: ev.message ?? 'Invalid reading.' })

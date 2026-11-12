@@ -918,13 +918,11 @@ export const DEMO_NOTE =
 
 // --- 9. about the builder ----------------------------------------------------
 
-// The only placeholders in the app, filled by the human before release.
-// scripts/check-placeholders.ts looks for open-brace open-brace sequences,
-// which these three fields contain on purpose.
+// Builder details, filled before release. Role/college left out on request.
 export const BUILDER = {
-  name: '{{BUILDER_NAME}}',
-  roleAndCollege: '{{ROLE_AND_COLLEGE}}',
-  contact: '{{CONTACT}}',
+  name: 'Arya Shah',
+  roleAndCollege: '',
+  contact: '7506607903',
   approach:
     'I started from the head doctor\'s account of the ward, wrote the rules as a testable spec, and built outward from the daily loop. The product decisions are recorded with the alternatives they rejected, and the rules and permission tables on this page are generated from the code, so the documentation cannot quietly disagree with the app.',
   ai:

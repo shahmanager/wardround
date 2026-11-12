@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { evaluateTempInput } from '../temp'
-import { START, day, rd, pt } from './helpers'
+import { START, day, rd } from './helpers'
 import { computeStreak } from '../streak'
 
 // R3: input validation at exact boundaries (plan section 11).

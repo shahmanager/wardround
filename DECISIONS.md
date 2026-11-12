@@ -12,7 +12,7 @@ Numbered decisions, each with the alternative rejected, the reason, and the trad
    Rejected: no auth, or client-faked sign-in. Why: RBAC is only real when the server checks a signed session and reads the role from the staff table on every request; demo accounts keep the review link one click away. Trade-off: shared accounts until per-user credentials or SSO (Production path).
 
 4. **A per-visitor sandbox workspace.**
-   Rejected: one shared demo dataset. Why: reviewers sign in independently and would corrupt each other's demo otherwise. Trade-off: a workspace copy at sign-in — bounded by `INSERT ... SELECT`, a 7-day lazy purge and a 300-workspace cap with a friendly 503.
+   Rejected: one shared demo dataset. Why: reviewers sign in independently and would corrupt each other's demo otherwise. Trade-off: a workspace copy at sign-in — bounded by `INSERT ... SELECT`, a 7-day lazy purge and a 300-workspace cap with a friendly 503. The workspace is remembered by a signed 7-day `wr_visitor` cookie that outlives the 12-hour staff session, so the demo path's role switches (nurse → doctor → admin → head doctor) continue on the same ward. The cookie carries only a workspace id, never a role or identity; every API call still needs a valid staff session.
 
 5. **The database is the last line of defence.**
    Rejected: trusting the domain layer alone. Why: one active reading per patient-day, one visit per patient-day and one patient per bed must never break, so partial unique indexes and CHECK constraints enforce them where nothing can bypass them. Trade-off: constraints in migrations must stay in sync with the domain tests.

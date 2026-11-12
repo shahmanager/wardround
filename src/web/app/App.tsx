@@ -6,7 +6,7 @@ import { useCallback, useState, type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { can, ROLE_LABELS, type Permission, type Staff } from '@/domain'
-import { api } from './api'
+import { api, queryKeys } from './api'
 import { useSession } from './session'
 import { Button, ErrorBoundary, Modal, useToasts } from '@/web/components/ui'
 import { SignIn } from '@/web/screens/sign-in'
@@ -68,13 +68,27 @@ function TopBar({ me }: { me: NonNullable<ReturnType<typeof useSession>['me']> }
 
   const signOut = useCallback(async () => {
     setBusy('signout')
+    let reachedServer = true
     try {
       await api.signOut()
+    } catch {
+      // Do not claim a clean sign-out when the request never landed: the
+      // stateless cookie stays valid, so a reload could sign the visitor back
+      // in. Carry on to the sign-in screen, but say what happened.
+      reachedServer = false
     } finally {
+      // Drop every cached query, then pin the session to "signed out" so the
+      // router renders the sign-in screen immediately instead of bouncing
+      // through two loading redirects while /me resolves.
       queryClient.clear()
-      navigate('/signin')
+      queryClient.setQueryData(queryKeys.me, null)
+      navigate('/signin', { replace: true })
+      setBusy(null)
+      if (!reachedServer) {
+        push({ tone: 'warn', message: 'Signed out here, but the server did not confirm. If you reload and are still signed in, sign out again.' })
+      }
     }
-  }, [queryClient, navigate])
+  }, [queryClient, navigate, push])
 
   return (
     <header className="border-b border-ink/15 bg-white">
@@ -200,7 +214,17 @@ function Restricted({ who }: { who: string }) {
 }
 
 /** Route guard: session required, permission enforced with an explanation. */
-function Guard({ permission, who, children }: { permission: Permission; who: string; children: ReactNode }) {
+function Guard({
+  permission,
+  who,
+  role,
+  children,
+}: {
+  permission: Permission
+  who: string
+  role?: Staff['role']
+  children: ReactNode
+}) {
   const { me, isLoading } = useSession()
   const location = useLocation()
   if (isLoading) {
@@ -211,7 +235,7 @@ function Guard({ permission, who, children }: { permission: Permission; who: str
     )
   }
   if (me === null) return <Navigate to="/signin" replace state={{ from: location.pathname }} />
-  if (!can(me.staff, permission)) return <Restricted who={who} />
+  if (!can(me.staff, permission) || (role !== undefined && me.staff.role !== role)) return <Restricted who={who} />
   return <>{children}</>
 }
 
@@ -261,7 +285,7 @@ export function App() {
           <Route
             path="/rounds"
             element={
-              <Guard permission="reading.record" who="Nurse">
+              <Guard permission="reading.record" who="Nurse" role="NURSE">
                 <NurseScreen />
               </Guard>
             }

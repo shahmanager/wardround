@@ -532,7 +532,6 @@ function BuilderSection() {
     <Section id="builder" number="9" title="About the builder">
       <div className="max-w-prose">
         <p className="font-signage text-xl font-bold">{BUILDER.name}</p>
-        <p className="text-muted">{BUILDER.roleAndCollege}</p>
       </div>
       <div className="max-w-prose space-y-3 text-muted">
         <p>{BUILDER.approach}</p>

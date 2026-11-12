@@ -402,23 +402,25 @@ function QueueRow({ patient, group, selected, onSelect, onOpenModal }: QueueRowP
 
   return (
     <li className="border-b border-ink/10">
-      <div className="flex items-center gap-3 py-1.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-1.5">
         <button
           type="button"
           onClick={onSelect}
           aria-current={selected ? 'true' : undefined}
-          className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors duration-150 hover:bg-ink/5"
+          className="flex min-h-11 min-w-0 flex-1 basis-64 items-center gap-3 rounded-md text-left transition-colors duration-150 hover:bg-ink/5"
         >
           <BedTag bed={patient.bed ?? ''} size="sm" />
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold text-ink">{patient.name}</span>
-            <span className={`block text-sm ${temp && temp.tempC >= CONFIG.FEVER_THRESHOLD_C ? 'font-medium text-mercury' : 'text-muted'}`}>
+            <span className={`block break-words text-sm ${temp && temp.tempC >= CONFIG.FEVER_THRESHOLD_C ? 'font-medium text-mercury' : 'text-muted'}`}>
               {tempLine}
             </span>
           </span>
-          <StreakLadder streak={d.streak} />
+          <span className="shrink-0">
+            <StreakLadder streak={d.streak} />
+          </span>
         </button>
-        {action}
+        <span className="shrink-0">{action}</span>
       </div>
       {blockedReason !== null && <p className="pb-2 text-sm text-muted">{blockedReason}</p>}
     </li>
@@ -598,7 +600,7 @@ export function DoctorVisits() {
         </p>
       </header>
 
-      <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
+      <div className="mt-4 grid items-start gap-6 xl:grid-cols-[minmax(360px,460px)_minmax(0,1fr)]">
         <section aria-label="Visit queue">
           {groups.length === 0 ? (
             <EmptyState

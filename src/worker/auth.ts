@@ -5,7 +5,13 @@
 import { one } from './db'
 
 export const SESSION_COOKIE = 'wr_session'
+// The workspace (per-visitor sandbox) outlives the session cookie, so signing
+// out and back in as another role keeps the same demo state (PLAN section 13
+// swaps roles mid-demo). It is not a credential: the staff session is still
+// required for every API call; this only remembers which sandbox is "yours".
+export const VISITOR_COOKIE = 'wr_visitor'
 const TTL_S = 12 * 60 * 60
+export const VISITOR_TTL_S = 7 * 24 * 60 * 60
 
 function toB64url(bytes: Uint8Array): string {
   let bin = ''
@@ -69,6 +75,29 @@ export async function verifySessionToken(secret: string, token: string): Promise
       return null
     }
     return payload as SessionPayload
+  } catch {
+    return null
+  }
+}
+
+/** Cookie value for the long-lived visitor workspace pointer (see VISITOR_COOKIE). */
+export async function visitorCookieValue(secret: string, wsId: string): Promise<string> {
+  const payload = { wsId, exp: Math.floor(Date.now() / 1000) + VISITOR_TTL_S }
+  const body = strB64url(JSON.stringify(payload))
+  return `${body}.${toB64url(await hmac(secret, body))}`
+}
+
+export async function verifyVisitorToken(secret: string, token: string): Promise<{ wsId: string } | null> {
+  const dot = token.indexOf('.')
+  if (dot <= 0 || token.indexOf('.', dot + 1) !== -1) return null
+  const body = token.slice(0, dot)
+  const expected = toB64url(await hmac(secret, body))
+  try {
+    if (!bytesEqual(fromB64url(token.slice(dot + 1)), fromB64url(expected))) return null
+    const payload = JSON.parse(new TextDecoder().decode(fromB64url(body))) as { wsId?: unknown; exp?: unknown }
+    if (typeof payload.wsId !== 'string' || typeof payload.exp !== 'number') return null
+    if (payload.exp <= Math.floor(Date.now() / 1000)) return null
+    return { wsId: payload.wsId }
   } catch {
     return null
   }

@@ -3,8 +3,6 @@ import { evaluatePatientDay } from '../patient-day'
 import { approvalInvalidated, validateAdmission, validateApprove, validateCompleteDischarge, validateCorrection, validateDeath, validateDoctorReading, validateLateEntry, validateNewReading, validateUndo, validateVisit } from '../flow'
 import { pt, rd, START, day, vt } from './helpers'
 
-const admitted = day(10)
-
 // R16/R17/R21: the derived patient-day state.
 describe('patient-day state', () => {
   test('TO_MEASURE before today\'s reading', () => {

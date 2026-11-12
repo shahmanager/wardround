@@ -16,7 +16,7 @@ function walk(dir: string): string[] {
 const root = resolve(import.meta.dirname, '..', 'src')
 const offenders = walk(root)
   .filter((f) => /\.(ts|tsx|css|html)$/.test(f))
-  .filter((f) => readFileSync(f, 'utf8').includes('{{'))
+  .filter((f) => /\{\{\s*[A-Z][A-Z0-9_]*\s*\}\}/.test(readFileSync(f, 'utf8')))
 
 if (offenders.length > 0) {
   console.error('Placeholders remain — fill these before releasing:')
