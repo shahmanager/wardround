@@ -1,0 +1,47 @@
+{
+  "name": "wardround",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && wrangler dev",
+    "dev:ui": "vite dev",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src scripts",
+    "test": "vitest run",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply wardround --local",
+    "db:migrate:remote": "wrangler d1 migrations apply wardround --remote",
+    "db:seed:template": "tsx scripts/seed-template.ts && wrangler d1 execute wardround --local --file=seed/seed-template.sql",
+    "db:seed:template:remote": "wrangler d1 execute wardround --remote --file=seed/seed-template.sql",
+    "check:placeholders": "tsx scripts/check-placeholders.ts",
+    "release": "npm run typecheck && npm run lint && npm run test && npm run build && npm run check:placeholders"
+  },
+  "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.0",
+    "@fontsource/barlow-semi-condensed": "^5.2.0",
+    "@tanstack/react-query": "^5.80.0",
+    "hono": "^4.7.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.6.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261110.1",
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "eslint": "^9.28.0",
+    "fast-check": "^4.0.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.33.0",
+    "vite": "^6.3.0",
+    "vitest": "^3.1.0",
+    "wrangler": "^4.136.0"
+  }
+}

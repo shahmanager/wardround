@@ -1,0 +1,24 @@
+// WardRound — Cloudflare Worker + Static Assets + D1
+// The worker runs first for /api/* (run_worker_first) so the SPA fallback
+// never answers an API call; everything else falls through to the SPA.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wardround",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2025-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "wardround",
+      "database_id": "deb96b3e-c447-47b3-bc19-407f72550edf"
+    }
+  ],
+  "vars": {
+    "APP_ENV": "demo"
+  }
+}

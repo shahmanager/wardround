@@ -1,0 +1,55 @@
+// Design tokens: ward-signage identity (plan section 8). Tailwind v4 reads
+// these via @theme; components reference the tokens, never raw hex values.
+@import 'tailwindcss';
+
+@theme {
+  --color-gauze: #edf1f2; /* page background */
+  --color-ink: #13222e; /* text, primary buttons */
+  --color-muted: #566876; /* secondary text */
+  --color-mercury: #c62f18; /* fever, needs-attention, alerts — nothing else */
+  --color-signal: #8a5200; /* warning text */
+  --color-signal-tint: #fbe8bd; /* warning background */
+  --color-done: #1e7a4a; /* completed, fever-free */
+  --color-focus: #2457c5; /* focus rings, links */
+  --color-chart-grid: #cfe0da; /* observation chart paper only */
+  --color-tape: #f5c400; /* caution strip only */
+
+  --font-signage: 'Barlow Semi Condensed', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-gauze);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Caution-tape strip: ink stripes on tape yellow, demo marker only. */
+.caution-strip {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-tape) 0 14px,
+    var(--color-ink) 14px 28px
+  );
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
